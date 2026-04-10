@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  pets      Pet[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pet {
+  id            String         @id @default(uuid())
+  userId        String
+  name          String
+  species       String
+  breed         String?
+  birthDate     DateTime?
+  weight        Float?
+  notes         String?
+  user          User           @relation(fields: [userId], references: [id])
+  vaccines      Vaccine[]
+  medications   Medication[]
+  appointments  Appointment[]
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Vaccine {
+  id                 String    @id @default(uuid())
+  petId              String
+  name               String
+  applicationDate    DateTime
+  nextDoseDate       DateTime?
+  veterinarian       String?
+  clinic             String?
+  notes              String?
+  reminderDaysBefore Int       @default(7)
+  pet                Pet       @relation(fields: [petId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Medication {
+  id                    String    @id @default(uuid())
+  petId                 String
+  name                  String
+  dosage                String
+  frequency             String
+  startDate             DateTime
+  endDate               DateTime?
+  time                  String?
+  notes                 String?
+  reminderMinutesBefore Int       @default(60)
+  pet                   Pet       @relation(fields: [petId], references: [id])
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Appointment {
+  id                 String   @id @default(uuid())
+  petId              String
+  title              String
+  date               DateTime
+  veterinarian       String?
+  clinic             String?
+  notes              String?
+  reminderDaysBefore Int      @default(1)
+  pet                Pet      @relation(fields: [petId], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  petId        String
+  type         String
+  referenceId  String
+  emailTo      String
+  scheduledFor DateTime
+  sentAt       DateTime?
+  status       String
+  message      String?
+  pet          Pet       @relation(fields: [petId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
