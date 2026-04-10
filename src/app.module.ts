@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { PetsModule } from './pets/pets.module';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { VaccinesModule } from './vaccines/vaccines.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     UsersModule,
     PetsModule,
+    VaccinesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
