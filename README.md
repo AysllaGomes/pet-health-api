@@ -1,98 +1,221 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Pet Health API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API para gerenciamento de saúde de pets, com controle de vacinas, antipulgas, vermífugos e envio automático de lembretes por e-mail.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Tecnologias
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* Node.js
+* NestJS
+* Prisma ORM
+* PostgreSQL
+* Nodemailer
+* @nestjs/schedule (cron jobs)
 
-## Project setup
+---
 
-```bash
-$ npm install
+## Funcionalidades
+
+### Usuários
+
+* Criar usuário
+* Listar usuários
+* Atualizar usuário
+* Remover usuário
+
+### Pets
+
+* Cadastro de pets
+* Relacionamento com usuário
+
+### Vacinas / Tratamentos
+
+* Cadastro de vacina/remédio
+* Definição de data de aplicação
+* Definição de próxima dose
+* Categoria do tratamento:
+
+    * `VACCINE`
+    * `ANTIPARASITIC`
+    * `DEWORMER`
+
+---
+
+## Notificações automáticas
+
+* Cron job executado periodicamente
+* Envio de e-mails com base na regra
+
+### Regras de lembrete
+
+| Categoria     | Comportamento                                   |
+| ------------- | ----------------------------------------------- |
+| VACCINE       | Envia X dias antes (`reminderDaysBefore`)       |
+| ANTIPARASITIC | Envia 5 dias antes (comprar) + no dia (aplicar) |
+| DEWORMER      | Envia 5 dias antes (comprar) + no dia (aplicar) |
+
+---
+
+## Envio de e-mail
+
+Utiliza **Nodemailer com SMTP (Gmail)**.
+
+### Configuração
+
+Crie um arquivo `.env`:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/pet_health_db"
+
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USER=seuemail@gmail.com
+MAIL_PASS=sua_app_password
+MAIL_FROM="Pet Health <seuemail@gmail.com>"
 ```
 
-## Compile and run the project
+Importante:
 
-```bash
-# development
-$ npm run start
+* Usar **App Password do Gmail**
+* Ativar verificação em duas etapas
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
+## Banco de dados
+
+### Modelo principal: Vaccine
+
+```ts
+Vaccine {
+  id
+  petId
+  name
+  category
+  applicationDate
+  nextDoseDate
+  reminderDaysBefore
+}
 ```
 
-## Run tests
+### Categorias
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```ts
+VACCINE
+ANTIPARASITIC
+DEWORMER
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Scheduler (Cron)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```ts
+@Cron(CronExpression.EVERY_8_HOURS)
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Função:
 
-## Resources
+* Verificar vacinas com lembretes ativos
+* Enviar e-mails
+* Registrar notificações enviadas
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Controle de duplicidade
 
-## Support
+A tabela `Notification` é usada para:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+* Evitar envio duplicado
+* Registrar histórico de envio
+* Armazenar status (`SENT`, `FAILED`)
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Como rodar o projeto
 
-## License
+### 1. Instalar dependências
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+npm install
+```
+
+### 2. Configurar banco
+
+```bash
+npx prisma migrate dev
+```
+
+### 3. Rodar aplicação
+
+```bash
+npm run start:dev
+```
+
+API disponível em:
+
+```
+http://localhost:3000
+```
+
+---
+
+## Exemplos de uso
+
+### Criar vacina comum
+
+```json
+POST /vaccines
+```
+
+```json
+{
+  "petId": "ID_DO_PET",
+  "name": "Vacina Anual",
+  "category": "VACCINE",
+  "applicationDate": "2026-04-11",
+  "nextDoseDate": "2027-04-11",
+  "reminderDaysBefore": 7
+}
+```
+
+---
+
+### Criar antipulgas
+
+```json
+{
+  "petId": "ID_DO_PET",
+  "name": "Antipulgas",
+  "category": "ANTIPARASITIC",
+  "applicationDate": "2026-04-11",
+  "nextDoseDate": "2026-04-16"
+}
+```
+
+---
+
+## Próximos passos
+
+* [ ] Autenticação com JWT
+* [ ] Módulo de medicamentos com horários
+* [ ] Dashboard de próximos eventos
+* [ ] Deploy em ambiente cloud
+* [ ] Notificações via push
+
+---
+
+## Observações
+
+* Todas as datas são tratadas em **UTC**
+* O cron funciona apenas com a aplicação em execução
+* Para produção, recomenda-se:
+
+    * Uso de filas (BullMQ)
+    * Workers separados
+    * Serviços de e-mail dedicados (SendGrid, Resend, etc.)
+
+---
+
+## Autor
+Projeto desenvolvido por [@AysllaGomes](https://github.com/AysllaGomes)
