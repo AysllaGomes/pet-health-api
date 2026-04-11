@@ -65,4 +65,32 @@ export class MailService implements OnModuleInit {
 
     this.logger.log(`E-mail aceito pelo SMTP: ${info.messageId}`);
   }
+
+  async sendMedicationReminder(params: {
+    to: string;
+    tutorName: string;
+    petName: string;
+    medicationName: string;
+    dosage: string;
+    time: string;
+  }): Promise<void> {
+    const info = await this.transporter.sendMail({
+      from: process.env.MAIL_FROM,
+      to: params.to,
+      subject: `Lembrete de medicamento do ${params.petName}`,
+      text: `Olá, ${params.tutorName}! O medicamento ${params.medicationName} (${params.dosage}) do ${params.petName} está programado para ${params.time}.`,
+      html: `
+      <p>Olá, <strong>${params.tutorName}</strong>!</p>
+      <p>
+        O medicamento <strong>${params.medicationName}</strong>
+        (${params.dosage}) do <strong>${params.petName}</strong>
+        está programado para <strong>${params.time}</strong>.
+      </p>
+    `,
+    });
+
+    this.logger.log(
+      `E-mail de medicamento aceito pelo SMTP: ${info.messageId}`,
+    );
+  }
 }

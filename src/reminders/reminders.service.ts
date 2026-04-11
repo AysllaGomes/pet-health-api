@@ -15,7 +15,7 @@ export class RemindersService {
     private readonly mailService: MailService,
   ) {}
 
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_8_HOURS)
   async handleVaccineReminders(): Promise<void> {
     this.logger.log('Verificando vacinas próximas...');
 
@@ -163,11 +163,146 @@ export class RemindersService {
     return [{ kind: 'DEFAULT', date: defaultReminderDate }];
   }
 
-  private normalizeText(value: string): string {
-    return value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
+  @Cron(CronExpression.EVERY_MINUTE)
+  async handleMedicationReminders(): Promise<void> {
+    this.logger.log('Verificando medicamentos próximos...');
+
+    const now = new Date();
+
+    // janela do dia em UTC (para bater com o banco)
+    const dayStartUtc = new Date(now);
+    dayStartUtc.setUTCHours(0, 0, 0, 0);
+
+    const dayEndUtc = new Date(now);
+    dayEndUtc.setUTCHours(23, 59, 59, 999);
+
+    const medications = await this.prisma.medication.findMany({
+      where: {
+        time: {
+          not: null,
+        },
+        startDate: {
+          lte: dayEndUtc,
+        },
+        OR: [
+          {
+            endDate: null,
+          },
+          {
+            endDate: {
+              gte: dayStartUtc,
+            },
+          },
+        ],
+      },
+      include: {
+        pet: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    this.logger.log(`Medicamentos encontrados: ${medications.length}`);
+
+    for (const medication of medications) {
+      if (!medication.time) continue;
+
+      const [hours, minutes] = medication.time.split(':').map(Number);
+
+      // horário LOCAL do medicamento
+      const medicationDateTime = new Date(now);
+      medicationDateTime.setHours(hours, minutes, 0, 0);
+
+      const reminderMinutesBefore = medication.reminderMinutesBefore ?? 60;
+
+      const reminderDateTime = new Date(medicationDateTime);
+      reminderDateTime.setMinutes(
+        reminderDateTime.getMinutes() - reminderMinutesBefore,
+      );
+
+      // comparação por minuto (evita erro de milissegundos)
+      const nowMinute = new Date(now);
+      nowMinute.setSeconds(0, 0);
+
+      const reminderMinute = new Date(reminderDateTime);
+      reminderMinute.setSeconds(0, 0);
+
+      this.logger.log(
+        `Medicamento=${medication.name} | time=${medication.time} | reminderAtLocal=${reminderDateTime.toLocaleString(
+          'pt-BR',
+        )} | nowLocal=${now.toLocaleString('pt-BR')}`,
+      );
+
+      if (nowMinute.getTime() !== reminderMinute.getTime()) {
+        continue;
+      }
+
+      // evita duplicidade
+      const alreadySent = await this.prisma.notification.findFirst({
+        where: {
+          petId: medication.petId,
+          referenceId: medication.id,
+          type: 'MEDICATION',
+          status: 'SENT',
+          scheduledFor: {
+            gte: new Date(reminderDateTime.getTime() - 60_000),
+            lte: new Date(reminderDateTime.getTime() + 60_000),
+          },
+        },
+      });
+
+      if (alreadySent) {
+        this.logger.log(`Notificação já enviada para ${medication.name}`);
+        continue;
+      }
+
+      try {
+        await this.mailService.sendMedicationReminder({
+          to: medication.pet.user.email,
+          tutorName: medication.pet.user.name,
+          petName: medication.pet.name,
+          medicationName: medication.name,
+          dosage: medication.dosage,
+          time: medication.time,
+        });
+
+        await this.prisma.notification.create({
+          data: {
+            petId: medication.petId,
+            type: 'MEDICATION',
+            referenceId: medication.id,
+            emailTo: medication.pet.user.email,
+            scheduledFor: reminderDateTime,
+            sentAt: new Date(),
+            status: 'SENT',
+            message: `Lembrete enviado para ${medication.name}`,
+          },
+        });
+
+        this.logger.log(
+          `Lembrete enviado para ${medication.pet.user.email} (${medication.name})`,
+        );
+      } catch (error) {
+        await this.prisma.notification.create({
+          data: {
+            petId: medication.petId,
+            type: 'MEDICATION',
+            referenceId: medication.id,
+            emailTo: medication.pet.user.email,
+            scheduledFor: reminderDateTime,
+            status: 'FAILED',
+            message:
+              error instanceof Error ? error.message : 'Erro desconhecido',
+          },
+        });
+
+        this.logger.error(
+          `Erro ao enviar lembrete para ${medication.pet.user.email}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
   }
 }
