@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { VaccinesModule } from './vaccines/vaccines.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { MedicationsModule } from './medications/medications.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RemindersModule } from './reminders/reminders.module';
     VaccinesModule,
     MailModule,
     RemindersModule,
+    MedicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
