@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 
+type VaccineReminderKind = 'DEFAULT' | 'BUY' | 'APPLY';
+
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
@@ -33,21 +35,31 @@ export class MailService implements OnModuleInit {
     petName: string;
     vaccineName: string;
     nextDoseDate: Date;
+    reminderKind: VaccineReminderKind;
   }): Promise<void> {
     const formattedDate = params.nextDoseDate.toLocaleDateString('pt-BR');
+
+    let subject = `Lembrete de ${params.vaccineName} do ${params.petName}`;
+    let message = `A ${params.vaccineName} do ${params.petName} está próxima da data prevista (${formattedDate}).`;
+
+    if (params.reminderKind === 'BUY') {
+      subject = `Comprar ${params.vaccineName} do ${params.petName}`;
+      message = `Faltam 5 dias para a aplicação de ${params.vaccineName} do ${params.petName}. Hora de comprar o medicamento para aplicar em ${formattedDate}.`;
+    }
+
+    if (params.reminderKind === 'APPLY') {
+      subject = `Aplicar ${params.vaccineName} do ${params.petName} hoje`;
+      message = `Hoje é o dia de aplicar ${params.vaccineName} no ${params.petName}.`;
+    }
 
     const info = await this.transporter.sendMail({
       from: process.env.MAIL_FROM,
       to: params.to,
-      subject: `Lembrete de vacina do ${params.petName}`,
-      text: `Olá, ${params.tutorName}! A vacina ${params.vaccineName} do ${params.petName} está próxima da data prevista (${formattedDate}).`,
+      subject,
+      text: `Olá, ${params.tutorName}! ${message}`,
       html: `
         <p>Olá, <strong>${params.tutorName}</strong>!</p>
-        <p>
-          A vacina <strong>${params.vaccineName}</strong> do
-          <strong>${params.petName}</strong> está próxima da data prevista:
-          <strong>${formattedDate}</strong>.
-        </p>
+        <p>${message}</p>
       `,
     });
 
