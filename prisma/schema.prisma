@@ -40,18 +40,19 @@ model Pet {
 }
 
 model Vaccine {
-  id                 String    @id @default(uuid())
+  id                 String          @id @default(uuid())
   petId              String
   name               String
+  category           VaccineCategory @default(VACCINE)
   applicationDate    DateTime
   nextDoseDate       DateTime?
   veterinarian       String?
   clinic             String?
   notes              String?
-  reminderDaysBefore Int       @default(7)
-  pet                Pet       @relation(fields: [petId], references: [id])
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  reminderDaysBefore Int             @default(7)
+  pet                Pet             @relation(fields: [petId], references: [id])
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 }
 
 model Medication {
@@ -97,4 +98,10 @@ model Notification {
   pet          Pet       @relation(fields: [petId], references: [id])
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+}
+
+enum VaccineCategory {
+  VACCINE
+  ANTIPARASITIC
+  DEWORMER
 }

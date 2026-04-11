@@ -1,7 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
 import { PrismaService } from '../prisma/prisma.service';
-
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
 
 @Injectable()
@@ -19,9 +17,14 @@ export class VaccinesService {
 
     return this.prisma.vaccine.create({
       data: {
-        ...dto,
+        petId: dto.petId,
+        name: dto.name,
+        category: dto.category ?? 'VACCINE',
         applicationDate: new Date(dto.applicationDate),
         nextDoseDate: dto.nextDoseDate ? new Date(dto.nextDoseDate) : undefined,
+        veterinarian: dto.veterinarian,
+        clinic: dto.clinic,
+        notes: dto.notes,
         reminderDaysBefore: dto.reminderDaysBefore ?? 7,
       },
     });

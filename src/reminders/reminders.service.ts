@@ -49,7 +49,7 @@ export class RemindersService {
       }
 
       const reminderPlans = this.buildReminderPlans(
-        vaccine.name,
+        vaccine.category,
         vaccine.nextDoseDate,
         vaccine.reminderDaysBefore ?? 7,
       );
@@ -133,16 +133,12 @@ export class RemindersService {
   }
 
   private buildReminderPlans(
-    vaccineName: string,
+    category: 'VACCINE' | 'ANTIPARASITIC' | 'DEWORMER',
     nextDoseDate: Date,
     reminderDaysBefore: number,
   ): Array<{ kind: ReminderKind; date: Date }> {
-    const normalizedName = this.normalizeText(vaccineName);
     const isSpecialType =
-      normalizedName.includes('antipulga') ||
-      normalizedName.includes('antipulgas') ||
-      normalizedName.includes('vermifugo') ||
-      normalizedName.includes('vermifugos');
+      category === 'ANTIPARASITIC' || category === 'DEWORMER';
 
     if (isSpecialType) {
       const buyDate = new Date(nextDoseDate);

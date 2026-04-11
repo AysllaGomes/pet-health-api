@@ -1,4 +1,16 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsInt } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsDateString,
+  IsInt,
+  IsEnum,
+} from 'class-validator';
+
+export enum VaccineCategoryDto {
+  VACCINE = 'VACCINE',
+  ANTIPARASITIC = 'ANTIPARASITIC',
+  DEWORMER = 'DEWORMER',
+}
 
 export class CreateVaccineDto {
   @IsNotEmpty()
@@ -6,6 +18,10 @@ export class CreateVaccineDto {
 
   @IsNotEmpty()
   name: string;
+
+  @IsOptional()
+  @IsEnum(VaccineCategoryDto)
+  category?: VaccineCategoryDto;
 
   @IsDateString()
   applicationDate: string;
