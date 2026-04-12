@@ -75,9 +75,7 @@ export class MedicationReminderService {
       );
 
       this.logger.log(
-        `Medicamento=${medication.name} | time=${medication.time} | reminderAtLocal=${reminderDateTime.toLocaleString(
-          'pt-BR',
-        )} | nowLocal=${now.toLocaleString('pt-BR')}`,
+        `Medicamento=${medication.name} | time=${medication.time} | reminderAtLocal=${this.reminderDateService.formatLocalDateTime(reminderDateTime)} | nowLocal=${now.toLocaleString('pt-BR')}`,
       );
 
       if (!isSameMinute) {

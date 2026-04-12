@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-export type ReminderKind = 'DEFAULT' | 'BUY' | 'APPLY';
+import { VaccineReminderPlan } from '../types/reminder.types';
 
 @Injectable()
 export class ReminderDateService {
@@ -8,7 +8,7 @@ export class ReminderDateService {
     category: 'VACCINE' | 'ANTIPARASITIC' | 'DEWORMER',
     nextDoseDate: Date,
     reminderDaysBefore: number,
-  ): Array<{ kind: ReminderKind; date: Date }> {
+  ): VaccineReminderPlan[] {
     const isSpecialType =
       category === 'ANTIPARASITIC' || category === 'DEWORMER';
 
@@ -71,5 +71,37 @@ export class ReminderDateService {
     b.setSeconds(0, 0);
 
     return a.getTime() === b.getTime();
+  }
+
+  getUtcStartOfDay(reference: Date): Date {
+    const date = new Date(reference);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  }
+
+  getUtcEndOfDay(reference: Date): Date {
+    const date = new Date(reference);
+    date.setUTCHours(23, 59, 59, 999);
+    return date;
+  }
+
+  getLocalStartOfDay(reference: Date): Date {
+    const date = new Date(reference);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  getLocalEndOfDay(reference: Date): Date {
+    const date = new Date(reference);
+    date.setHours(23, 59, 59, 999);
+    return date;
+  }
+
+  formatLocalDateTime(date: Date): string {
+    return date.toLocaleString('pt-BR');
+  }
+
+  formatUtcDateTime(date: Date): string {
+    return date.toISOString();
   }
 }
