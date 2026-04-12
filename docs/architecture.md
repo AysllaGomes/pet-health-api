@@ -266,7 +266,7 @@ Antes de enviar qualquer lembrete:
 
 ---
 
-## 📬 Sistema de e-mail
+## Sistema de e-mail
 
 Utiliza **Nodemailer** com SMTP (Gmail).
 
