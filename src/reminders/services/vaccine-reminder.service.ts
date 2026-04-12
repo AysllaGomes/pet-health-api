@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { MailService } from '../../mail/mail.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { NotificationService } from './notification.service';
+import { MailService } from '../../mail/mail.service';
+
 import { ReminderDateService } from './reminder-date.service';
+import { NotificationService } from './notification.service';
+
+import { ReminderType, VaccineReminderContext } from '../types/reminder.types';
 
 @Injectable()
 export class VaccineReminderService {
@@ -40,21 +43,27 @@ export class VaccineReminderService {
       },
     });
 
+    this.logger.log(`Vacinas encontradas: ${vaccines.length}`);
+
     for (const vaccine of vaccines) {
       if (!vaccine.nextDoseDate) continue;
 
-      const plans = this.reminderDateService.buildVaccineReminderPlans(
+      const reminderPlans = this.reminderDateService.buildVaccineReminderPlans(
         vaccine.category,
         vaccine.nextDoseDate,
         vaccine.reminderDaysBefore ?? 7,
       );
 
-      for (const plan of plans) {
+      for (const plan of reminderPlans) {
+        this.logger.log(
+          `Vacina=${vaccine.name} | tipo=${plan.kind} | scheduledDate=${plan.date.toISOString()} | today=${today.toISOString()}`,
+        );
+
         if (plan.date.getTime() !== today.getTime()) {
           continue;
         }
 
-        const type = `VACCINE_${plan.kind}`;
+        const type = this.getNotificationType(plan.kind);
 
         const alreadySent = await this.notificationService.hasSentToday({
           petId: vaccine.petId,
@@ -64,43 +73,83 @@ export class VaccineReminderService {
           end: dayRange.end,
         });
 
-        if (alreadySent) continue;
-
-        try {
-          await this.mailService.sendVaccineReminder({
-            to: vaccine.pet.user.email,
-            tutorName: vaccine.pet.user.name,
-            petName: vaccine.pet.name,
-            vaccineName: vaccine.name,
-            nextDoseDate: vaccine.nextDoseDate,
-            reminderKind: plan.kind,
-          });
-
-          await this.notificationService.registerSent({
-            petId: vaccine.petId,
-            referenceId: vaccine.id,
-            type,
-            emailTo: vaccine.pet.user.email,
-            scheduledFor: plan.date,
-            message: `Lembrete ${plan.kind} enviado para ${vaccine.name}`,
-          });
-        } catch (error) {
-          await this.notificationService.registerFailed({
-            petId: vaccine.petId,
-            referenceId: vaccine.id,
-            type,
-            emailTo: vaccine.pet.user.email,
-            scheduledFor: plan.date,
-            message:
-              error instanceof Error ? error.message : 'Erro desconhecido',
-          });
-
-          this.logger.error(
-            `Erro ao enviar lembrete para ${vaccine.pet.user.email}`,
-            error instanceof Error ? error.stack : String(error),
+        if (alreadySent) {
+          this.logger.log(
+            `Notificação já enviada para vacina ${vaccine.name} (${plan.kind})`,
           );
+          continue;
         }
+
+        const context: VaccineReminderContext = {
+          petId: vaccine.petId,
+          vaccineId: vaccine.id,
+          emailTo: vaccine.pet.user.email,
+          tutorName: vaccine.pet.user.name,
+          petName: vaccine.pet.name,
+          vaccineName: vaccine.name,
+          nextDoseDate: vaccine.nextDoseDate,
+          kind: plan.kind,
+          scheduledFor: plan.date,
+        };
+
+        await this.sendReminder(context);
       }
+    }
+  }
+
+  private async sendReminder(context: VaccineReminderContext): Promise<void> {
+    const type = this.getNotificationType(context.kind);
+
+    try {
+      await this.mailService.sendVaccineReminder({
+        to: context.emailTo,
+        tutorName: context.tutorName,
+        petName: context.petName,
+        vaccineName: context.vaccineName,
+        nextDoseDate: context.nextDoseDate,
+        reminderKind: context.kind,
+      });
+
+      await this.notificationService.registerSent({
+        petId: context.petId,
+        referenceId: context.vaccineId,
+        type,
+        emailTo: context.emailTo,
+        scheduledFor: context.scheduledFor,
+        message: `Lembrete ${context.kind} enviado para ${context.vaccineName}`,
+      });
+
+      this.logger.log(
+        `Lembrete ${context.kind} enviado para ${context.emailTo} sobre ${context.vaccineName} de ${context.petName}`,
+      );
+    } catch (error) {
+      await this.notificationService.registerFailed({
+        petId: context.petId,
+        referenceId: context.vaccineId,
+        type,
+        emailTo: context.emailTo,
+        scheduledFor: context.scheduledFor,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+
+      this.logger.error(
+        `Erro ao enviar lembrete para ${context.emailTo}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  private getNotificationType(
+    kind: VaccineReminderContext['kind'],
+  ): ReminderType {
+    switch (kind) {
+      case 'BUY':
+        return 'VACCINE_BUY';
+      case 'APPLY':
+        return 'VACCINE_APPLY';
+      case 'DEFAULT':
+      default:
+        return 'VACCINE_DEFAULT';
     }
   }
 }

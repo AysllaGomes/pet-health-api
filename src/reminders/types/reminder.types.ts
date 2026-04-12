@@ -17,3 +17,20 @@ export interface MedicationReminderContext {
   time: string;
   scheduledFor: Date;
 }
+
+export interface VaccineReminderPlan {
+  kind: ReminderKind;
+  date: Date;
+}
+
+export interface VaccineReminderContext {
+  petId: string;
+  vaccineId: string;
+  emailTo: string;
+  tutorName: string;
+  petName: string;
+  vaccineName: string;
+  nextDoseDate: Date;
+  kind: ReminderKind;
+  scheduledFor: Date;
+}
