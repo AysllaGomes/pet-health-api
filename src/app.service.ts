@@ -8,6 +8,6 @@ export class AppService {
 
   async getHello(): Promise<string> {
     const totalUsers = await this.prisma.user.count();
-    return `API online com Prisma 🚀 Total de usuários: ${totalUsers}`;
+    return `API online com Prisma. Total de usuários: ${totalUsers}`;
   }
 }

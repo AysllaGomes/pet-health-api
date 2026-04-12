@@ -6,7 +6,7 @@ import { AppModule } from './app.module';
 
 import { PrismaService } from './prisma/prisma.service';
 
-async function bootstrap(): Promise<void> {
+export async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   const prismaService = app.get(PrismaService);
@@ -40,4 +40,4 @@ async function bootstrap(): Promise<void> {
   console.log('Swagger available at http://localhost:3000/docs');
 }
 
-bootstrap();
+void bootstrap();
