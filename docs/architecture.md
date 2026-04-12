@@ -1,221 +1,348 @@
-# Pet Health API - Documento de Arquitetura
+# Pet Health API - Arquitetura
 
-## 1. Visão geral
-
-A **Pet Health API** é uma aplicação backend desenvolvida para gerenciar a saúde de pets, permitindo o cadastro de usuários, pets, vacinas e tratamentos preventivos, além do envio automático de lembretes por e-mail.
-
-O sistema foi projetado com foco em simplicidade, organização do domínio e possibilidade de evolução para cenários mais robustos.
+Este documento descreve a arquitetura da **Pet Health API**, incluindo visão geral, decisões técnicas, estrutura do projeto, domínio e principais fluxos do sistema.
 
 ---
 
-## 2. Objetivo
+## Visão geral
 
-Centralizar o acompanhamento de eventos de saúde dos pets, como:
+A **Pet Health API** é uma aplicação backend desenvolvida com **NestJS** que permite:
 
-* Vacinas
-* Antipulgas
-* Vermífugos
-* Lembretes automáticos por e-mail
+* Gerenciar usuários e seus pets
+* Controlar vacinas e tratamentos preventivos
+* Controlar medicamentos com horários
+* Enviar lembretes automáticos por e-mail
 
----
+A aplicação segue princípios de:
 
-## 3. Arquitetura da solução
-
-A aplicação segue uma arquitetura em camadas baseada no **NestJS**:
-
-* **Controllers** → entrada HTTP
-* **Services** → regras de negócio
-* **Prisma Service** → acesso ao banco
-* **Scheduler** → processamento automático
-* **Mail Service** → envio de e-mails
-
-### Fluxo simplificado
-
-```text
-Cliente → Controller → Service → Prisma → Banco
-```
-
-### Fluxo de lembretes
-
-```text
-Cron → RemindersService → Banco → MailService → SMTP
-```
+* Separação de responsabilidades
+* Baixo acoplamento
+* Código orientado a domínio
 
 ---
 
-## 4. Stack tecnológica
+## Stack tecnológica
 
-### Backend
-
-* Node.js
-* NestJS
-* TypeScript
-
-### Banco
-
-* PostgreSQL
-* Prisma ORM
-
-### Outros
-
-* Nodemailer
-* @nestjs/schedule
+* **Node.js**
+* **NestJS**
+* **Prisma ORM**
+* **PostgreSQL**
+* **Nodemailer (SMTP)**
+* **@nestjs/schedule (cron jobs)**
+* **Swagger (OpenAPI)**
 
 ---
 
-## 5. Estrutura do projeto
+## Estrutura do projeto
 
 ```text
 src/
-├── prisma/
 ├── users/
 ├── pets/
 ├── vaccines/
+├── medications/
 ├── mail/
-└── reminders/
+├── prisma/
+├── reminders/
+│   ├── services/
+│   │   ├── vaccine-reminder.service.ts
+│   │   ├── medication-reminder.service.ts
+│   │   ├── reminder-date.service.ts
+│   │   └── notification.service.ts
+│   └── reminders.service.ts
 ```
 
 ---
 
-## 6. Modelagem do domínio
+## Padrão arquitetural
+
+A aplicação segue um padrão modular inspirado em **Clean Architecture**:
+
+### Camadas principais
+
+* **Controller**
+
+    * Responsável por receber requisições HTTP
+
+* **Service**
+
+    * Contém regras de negócio
+
+* **PrismaService**
+
+    * Camada de acesso a dados
+
+* **Scheduler (Reminders)**
+
+    * Executa regras automáticas baseadas em tempo
+
+---
+
+## Domínio da aplicação
 
 ### User
 
-Responsável pelo pet e destinatário dos e-mails.
-
-### Pet
-
-Animal vinculado ao usuário.
-
-### Vaccine
-
-Representa vacinas e tratamentos.
+Representa o tutor.
 
 Campos principais:
 
-* `name`
-* `category`
-* `nextDoseDate`
-* `reminderDaysBefore`
+* id
+* name
+* email
+* password
+
+---
+
+### Pet
+
+Representa um animal do usuário.
+
+Campos principais:
+
+* name
+* species
+* breed
+* birthDate
+* weight
+
+---
+
+### Vaccine
+
+Representa:
+
+* vacinas
+* tratamentos preventivos (antipulgas, vermífugo)
+
+Campos principais:
+
+* name
+* category (`VACCINE`, `ANTIPARASITIC`, `DEWORMER`)
+* applicationDate
+* nextDoseDate
+* reminderDaysBefore
+
+---
+
+### Medication
+
+Representa medicamentos com horário.
+
+Campos principais:
+
+* name
+* dosage
+* frequency
+* startDate
+* endDate
+* time (HH:mm)
+* reminderMinutesBefore
+
+---
 
 ### Notification
 
-Histórico de envio de lembretes.
+Registra histórico de envios.
+
+Campos principais:
+
+* type
+* referenceId
+* scheduledFor
+* sentAt
+* status (`SENT`, `FAILED`)
 
 ---
 
-## 7. Categorias de tratamento
+## Sistema de lembretes
 
-```ts
-VACCINE
-ANTIPARASITIC
-DEWORMER
+O sistema de lembretes é dividido em serviços especializados.
+
+### Orquestrador
+
+```text
+RemindersService
 ```
 
----
+Responsável apenas por:
 
-## 8. Regras de negócio
-
-### Vacinas comuns (`VACCINE`)
-
-* Envio X dias antes (`reminderDaysBefore`)
-
-### Antipulgas (`ANTIPARASITIC`)
-
-* 5 dias antes → comprar
-* no dia → aplicar
-
-### Vermífugo (`DEWORMER`)
-
-* 5 dias antes → comprar
-* no dia → aplicar
+* executar cron jobs
+* delegar processamento
 
 ---
 
-## 9. Scheduler
+### Serviços especializados
 
-Utiliza:
+#### VaccineReminderService
 
-```ts
-@Cron(CronExpression.EVERY_8_HOURS)
-```
+Responsável por:
 
-Funções:
-
-* buscar vacinas
-* calcular datas de lembrete
-* evitar duplicidade
+* processar vacinas
+* aplicar regras por categoria
 * enviar e-mails
 
+#### MedicationReminderService
+
+Responsável por:
+
+* processar medicamentos
+* calcular horários
+* disparar lembretes por minuto
+
+#### ReminderDateService
+
+Centraliza:
+
+* cálculos de datas
+* regras de tempo
+* comparação de minutos
+
+#### NotificationService
+
+Responsável por:
+
+* evitar duplicidade
+* registrar envio
+* registrar falhas
+
 ---
 
-## 10. Controle de duplicidade
+## Regras de negócio
 
-A tabela `Notification` evita:
+### Vacinas padrão
 
-* envio duplicado
-* múltiplos disparos no mesmo dia
-
----
-
-## 11. Tratamento de datas
-
-Todas as datas são tratadas em **UTC** para evitar inconsistências de timezone.
+* Envio baseado em `reminderDaysBefore`
+* Exemplo: 7 dias antes da próxima dose
 
 ---
 
-## 12. Segurança
+### Antipulgas e vermífugo
 
-### Implementado
+Regra especial:
 
-* Hash de senha (bcrypt)
-* Validação de dados (class-validator)
+* **BUY** → 5 dias antes (comprar)
+* **APPLY** → no dia (aplicar)
 
-### Não implementado
+---
+
+### Medicamentos
+
+* Baseados em horário (`time`)
+* Lembrete enviado antes:
+
+    * `time - reminderMinutesBefore`
+* Comparação feita por minuto
+
+---
+
+## Tratamento de datas
+
+### Vacinas
+
+* Trabalham com datas em **UTC**
+* Comparação por dia
+
+---
+
+### Medicamentos
+
+* Trabalham com:
+
+    * datas em UTC (`startDate`, `endDate`)
+    * horário em **local time** (`time`)
+* Comparação por minuto
+
+---
+
+## Prevenção de duplicidade
+
+Antes de enviar qualquer lembrete:
+
+* Sistema verifica se já existe um registro `SENT`
+* Considera uma janela de tempo:
+
+    * dia inteiro (vacinas)
+    * ±1 minuto (medicamentos)
+
+---
+
+## 📬 Sistema de e-mail
+
+Utiliza **Nodemailer** com SMTP (Gmail).
+
+Responsável por:
+
+* envio de lembretes
+* templates simples (texto + HTML)
+
+---
+
+## Scheduler (cron jobs)
+
+* Vacinas: executa a cada **8 horas**
+* Medicamentos: executa a cada **1 minuto**
+
+Importante:
+
+* O sistema depende da aplicação estar rodando
+
+---
+
+## Segurança (estado atual)
+
+* Senhas armazenadas com hash
+* Sem autenticação JWT (ainda)
+
+---
+
+## Pontos de evolução
+
+### Segurança
 
 * JWT
-* autorização
-* proteção de rotas
+* Guardas de rota
+* Autorização por usuário
+
+### Notificações
+
+* Push notifications
+* WhatsApp
+* Provedores externos (SendGrid, Resend)
+
+### Infraestrutura
+
+* Deploy em cloud
+* Worker separado para cron
+* Filas (BullMQ)
+
+### Produto
+
+* Agenda (.ics)
+* Dashboard frontend
+* Controle de consultas veterinárias
 
 ---
 
-## 13. Limitações
+## Decisões importantes
 
-* cron depende da API rodando
-* uso de SMTP simples (não ideal para produção)
-* ausência de autenticação
-
----
-
-## 14. Evoluções futuras
-
-### Curto prazo
-
-* JWT
-* medicamentos com horário
-
-### Médio prazo
-
-* filas (BullMQ)
-* deploy cloud
-
-### Longo prazo
-
-* dashboard
-* notificações push
+* Uso de banco relacional (PostgreSQL)
+* Prisma como ORM
+* Separação de lógica de lembrete por tipo
+* Centralização de datas no `ReminderDateService`
+* Uso de cron interno (sem fila externa inicialmente)
 
 ---
 
-## 15. Considerações finais
+## Conclusão
 
-A arquitetura foi construída para:
+A arquitetura da aplicação foi construída para:
 
-* ser simples
-* evoluir facilmente
-* suportar crescimento gradual
+* Ser simples de entender
+* Facilitar evolução
+* Separar responsabilidades corretamente
+* Evitar bugs comuns (principalmente com datas e duplicidade)
 
----
+O projeto já está em nível sólido para:
 
-## 16. Autor
-
-Pet Health API, [@AysllaGomes](https://github.com/AysllaGomes)
+* portfólio profissional
+* evolução para produção

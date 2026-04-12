@@ -29,6 +29,7 @@ async function bootstrap(): Promise<void> {
     .addTag('users', 'Operações de usuários')
     .addTag('pets', 'Operações de pets')
     .addTag('vaccines', 'Operações de vacinas e tratamentos')
+    .addTag('medications', 'Operações de medicamentos controlados')
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);

@@ -40,6 +40,12 @@ API para gerenciamento de saúde de pets, com controle de vacinas, antipulgas, v
     * `ANTIPARASITIC`
     * `DEWORMER`
 
+### Medicamentos controlados
+
+* Cadastro de medicamentos
+* Definição de dosagem, frequência e horário
+* Envio automático de lembretes por e-mail antes do horário configurado
+
 ---
 
 ## Notificações automáticas
@@ -198,7 +204,7 @@ POST /vaccines
 ## Próximos passos
 
 * [ ] Autenticação com JWT
-* [ ] Módulo de medicamentos com horários
+* [x] Módulo de medicamentos com horários
 * [ ] Dashboard de próximos eventos
 * [ ] Deploy em ambiente cloud
 * [ ] Notificações via push

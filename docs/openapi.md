@@ -38,6 +38,7 @@ Atualmente, a documentação cobre os módulos:
 * `users`
 * `pets`
 * `vaccines`
+* `medications`
 
 Cada endpoint possui:
 
@@ -137,6 +138,23 @@ A documentação OpenAPI traz os seguintes ganhos:
   "applicationDate": "2026-04-11",
   "nextDoseDate": "2026-04-16",
   "reminderDaysBefore": 5
+}
+```
+### Criar medicamentos
+
+**POST** `/medications`
+
+```json
+{
+  "petId": "PET_ID",
+  "name": "Prednisona",
+  "dosage": "1 comprimido",
+  "frequency": "1x ao dia",
+  "startDate": "2026-04-11",
+  "endDate": "2026-04-20",
+  "time": "08:00",
+  "notes": "Dar junto com alimento",
+  "reminderMinutesBefore": 30
 }
 ```
 
