@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../../mail/mail.service';
-
-import { ReminderDateService } from './reminder-date.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from './notification.service';
+import { ReminderDateService } from './reminder-date.service';
 
 import { ReminderType, VaccineReminderContext } from '../types/reminder.types';
 
