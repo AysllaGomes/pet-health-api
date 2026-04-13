@@ -15,6 +15,7 @@ import { VaccinesModule } from './vaccines/vaccines.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MedicationsModule } from './medications/medications.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     RemindersModule,
     MedicationsModule,
     NotificationsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
