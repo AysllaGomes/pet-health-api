@@ -40,14 +40,24 @@ describe('NotificationsController', () => {
       status: 'SENT',
       type: 'MEDICATION',
       petId: 'pet-1',
+      page: 1,
+      limit: 10,
     };
 
-    const notifications = [
-      {
-        id: 'not-1',
-        status: 'SENT',
+    const notifications = {
+      data: [
+        {
+          id: 'not-1',
+          status: 'SENT',
+        },
+      ],
+      meta: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
       },
-    ];
+    };
 
     notificationsServiceMock.findAll.mockResolvedValue(notifications);
 
