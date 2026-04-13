@@ -39,9 +39,8 @@ describe('PetsController', () => {
   });
 
   describe('create', () => {
-    it('deve chamar petsService.create com o dto e retornar o resultado', async () => {
+    it('deve chamar petsService.create com userId do token e dto', async () => {
       const dto: CreatePetDto = {
-        userId: 'user-1',
         name: 'Thor',
         species: 'dog',
         breed: 'Golden',
@@ -50,17 +49,23 @@ describe('PetsController', () => {
         notes: 'Saudável',
       };
 
+      const user = {
+        userId: 'user-1',
+        email: 'ayslla@email.com',
+      };
+
       const createdPet = {
         id: 'pet-1',
+        userId: 'user-1',
         ...dto,
       };
 
       petsServiceMock.create.mockResolvedValue(createdPet);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, user);
 
       expect(petsServiceMock.create).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.create).toHaveBeenCalledWith(dto);
+      expect(petsServiceMock.create).toHaveBeenCalledWith('user-1', dto);
       expect(result).toEqual(createdPet);
     });
   });

@@ -8,13 +8,6 @@ import {
 
 export class CreatePetDto {
   @ApiProperty({
-    example: 'uuid-do-user',
-    description: 'ID do usuário responsável pelo pet',
-  })
-  @IsNotEmpty()
-  userId: string;
-
-  @ApiProperty({
     example: 'Thor',
     description: 'Nome do pet',
   })

@@ -22,10 +22,12 @@ import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import * as authenticatedUserInterface from '../auth/interfaces/authenticated-user.interface';
 
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JwtAuthGuard)
 @ApiTags('pets')
+@UseGuards(JwtAuthGuard)
 @Controller('pets')
 export class PetsController {
   constructor(private readonly petsService: PetsService) {}
@@ -34,9 +36,11 @@ export class PetsController {
   @ApiOperation({ summary: 'Criar pet' })
   @ApiBody({ type: CreatePetDto })
   @ApiResponse({ status: 201, description: 'Pet criado com sucesso.' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
-  create(@Body() dto: CreatePetDto) {
-    return this.petsService.create(dto);
+  create(
+    @Body() dto: CreatePetDto,
+    @CurrentUser() user: authenticatedUserInterface.AuthenticatedUser,
+  ) {
+    return this.petsService.create(user.userId, dto);
   }
 
   @Get()

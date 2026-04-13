@@ -1,15 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PetsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPetDto: CreatePetDto) {
+  async create(userId: string, createPetDto: CreatePetDto) {
     const userExists = await this.prisma.user.findUnique({
-      where: { id: createPetDto.userId },
+      where: { id: userId },
     });
 
     if (!userExists) {
@@ -18,6 +20,7 @@ export class PetsService {
 
     return this.prisma.pet.create({
       data: {
+        userId,
         ...createPetDto,
         birthDate: createPetDto.birthDate
           ? new Date(createPetDto.birthDate)
