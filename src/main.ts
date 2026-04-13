@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 
 import { PrismaService } from './prisma/prisma.service';
 
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+
 export async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
@@ -19,6 +21,8 @@ export async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Pet Health API')
@@ -39,6 +43,7 @@ export async function bootstrap(): Promise<void> {
     .addTag('pets', 'Operações de pets')
     .addTag('vaccines', 'Operações de vacinas e tratamentos')
     .addTag('medications', 'Operações de medicamentos controlados')
+    .addTag('notifications', 'Operações de notificações')
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
