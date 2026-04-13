@@ -15,6 +15,7 @@ describe('PetsService', () => {
       findUnique: jest.fn(),
     },
     pet: {
+      count: jest.fn(),
       create: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -103,7 +104,7 @@ describe('PetsService', () => {
   });
 
   describe('findAll', () => {
-    it('deve retornar apenas os pets do usuário informado', async () => {
+    it('deve retornar os pets do usuário com paginação padrão', async () => {
       const pets = [
         {
           id: 'pet-1',
@@ -118,8 +119,9 @@ describe('PetsService', () => {
       ];
 
       prismaMock.pet.findMany.mockResolvedValue(pets);
+      prismaMock.pet.count.mockResolvedValue(1);
 
-      const result = await service.findAll('user-1');
+      const result = await service.findAll('user-1', {});
 
       expect(prismaMock.pet.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
@@ -133,9 +135,53 @@ describe('PetsService', () => {
           },
         },
         orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: 10,
       });
 
-      expect(result).toEqual(pets);
+      expect(prismaMock.pet.count).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
+
+      expect(result).toEqual({
+        data: pets,
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+      });
+    });
+
+    it('deve retornar os pets com paginação customizada', async () => {
+      prismaMock.pet.findMany.mockResolvedValue([]);
+      prismaMock.pet.count.mockResolvedValue(12);
+
+      await service.findAll('user-1', {
+        page: 2,
+        limit: 5,
+      });
+
+      expect(prismaMock.pet.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: 5,
+        take: 5,
+      });
+
+      expect(prismaMock.pet.count).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+      });
     });
   });
 

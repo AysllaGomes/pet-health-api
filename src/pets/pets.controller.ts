@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,12 +18,15 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
 import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import * as authenticatedUserInterface from '../auth/interfaces/authenticated-user.interface';
 
 @ApiBearerAuth('JWT-auth')
@@ -46,8 +50,11 @@ export class PetsController {
   @Get()
   @ApiOperation({ summary: 'Listar pets do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Lista de pets retornada.' })
-  findAll(@CurrentUser() user: authenticatedUserInterface.AuthenticatedUser) {
-    return this.petsService.findAll(user.userId);
+  findAll(
+    @CurrentUser() user: authenticatedUserInterface.AuthenticatedUser,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.petsService.findAll(user.userId, query);
   }
 
   @Get(':id')
