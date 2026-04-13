@@ -17,7 +17,7 @@ describe('PetsService', () => {
     pet: {
       create: jest.fn(),
       findMany: jest.fn(),
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -46,7 +46,6 @@ describe('PetsService', () => {
   describe('create', () => {
     it('deve criar um pet quando o usuário existir', async () => {
       const dto: CreatePetDto = {
-        userId: 'user-1',
         name: 'Thor',
         species: 'dog',
         breed: 'Golden Retriever',
@@ -57,6 +56,7 @@ describe('PetsService', () => {
 
       const createdPet = {
         id: 'pet-1',
+        userId: 'user-1',
         ...dto,
         birthDate: new Date('2020-05-10'),
       };
@@ -69,14 +69,15 @@ describe('PetsService', () => {
 
       prismaMock.pet.create.mockResolvedValue(createdPet);
 
-      const result = await service.create(dto);
+      const result = await service.create('user-1', dto);
 
       expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.userId },
+        where: { id: 'user-1' },
       });
 
       expect(prismaMock.pet.create).toHaveBeenCalledWith({
         data: {
+          userId: 'user-1',
           ...dto,
           birthDate: new Date('2020-05-10'),
         },
@@ -85,60 +86,24 @@ describe('PetsService', () => {
       expect(result).toEqual(createdPet);
     });
 
-    it('deve criar um pet sem birthDate quando ela não for informada', async () => {
-      const dto: CreatePetDto = {
-        userId: 'user-1',
-        name: 'Thor',
-        species: 'dog',
-        breed: 'Golden Retriever',
-        weight: 30,
-        notes: 'Sem data informada',
-      };
-
-      const createdPet = {
-        id: 'pet-1',
-        ...dto,
-      };
-
-      prismaMock.user.findUnique.mockResolvedValue({
-        id: 'user-1',
-      });
-
-      prismaMock.pet.create.mockResolvedValue(createdPet);
-
-      const result = await service.create(dto);
-
-      expect(prismaMock.pet.create).toHaveBeenCalledWith({
-        data: {
-          ...dto,
-          birthDate: undefined,
-        },
-      });
-
-      expect(result).toEqual(createdPet);
-    });
-
     it('deve lançar NotFoundException quando o usuário não existir', async () => {
       const dto: CreatePetDto = {
-        userId: 'user-invalido',
         name: 'Thor',
         species: 'dog',
       };
 
       prismaMock.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
-
-      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.userId },
-      });
+      await expect(service.create('user-invalido', dto)).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(prismaMock.pet.create).not.toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('deve retornar a lista de pets com os dados do usuário', async () => {
+    it('deve retornar apenas os pets do usuário informado', async () => {
       const pets = [
         {
           id: 'pet-1',
@@ -149,15 +114,15 @@ describe('PetsService', () => {
             name: 'Ayslla',
             email: 'ayslla@email.com',
           },
-          createdAt: new Date('2026-04-12T10:00:00.000Z'),
         },
       ];
 
       prismaMock.pet.findMany.mockResolvedValue(pets);
 
-      const result = await service.findAll();
+      const result = await service.findAll('user-1');
 
       expect(prismaMock.pet.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
         include: {
           user: {
             select: {
@@ -175,9 +140,10 @@ describe('PetsService', () => {
   });
 
   describe('findOne', () => {
-    it('deve retornar um pet pelo id', async () => {
+    it('deve retornar um pet do usuário pelo id', async () => {
       const pet = {
         id: 'pet-1',
+        userId: 'user-1',
         name: 'Thor',
         species: 'dog',
         user: {
@@ -187,12 +153,15 @@ describe('PetsService', () => {
         },
       };
 
-      prismaMock.pet.findUnique.mockResolvedValue(pet);
+      prismaMock.pet.findFirst.mockResolvedValue(pet);
 
-      const result = await service.findOne('pet-1');
+      const result = await service.findOne('user-1', 'pet-1');
 
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: 'pet-1' },
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'pet-1',
+          userId: 'user-1',
+        },
         include: {
           user: true,
         },
@@ -201,13 +170,18 @@ describe('PetsService', () => {
       expect(result).toEqual(pet);
     });
 
-    it('deve lançar NotFoundException quando o pet não existir', async () => {
-      prismaMock.pet.findUnique.mockResolvedValue(null);
+    it('deve lançar NotFoundException quando o pet não existir para o usuário', async () => {
+      prismaMock.pet.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('pet-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('user-1', 'pet-1')).rejects.toThrow(
+        NotFoundException,
+      );
 
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: 'pet-1' },
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'pet-1',
+          userId: 'user-1',
+        },
         include: {
           user: true,
         },
@@ -216,41 +190,26 @@ describe('PetsService', () => {
   });
 
   describe('update', () => {
-    it('deve atualizar um pet com birthDate convertida para Date', async () => {
+    it('deve atualizar um pet do usuário', async () => {
       const dto: UpdatePetDto = {
         name: 'Thor Atualizado',
         birthDate: '2021-01-15',
         notes: 'Atualizado',
       };
 
-      const existingPet = {
+      prismaMock.pet.findFirst.mockResolvedValue({
         id: 'pet-1',
+        userId: 'user-1',
         name: 'Thor',
-        species: 'dog',
-        user: {
-          id: 'user-1',
-        },
-      };
-
-      const updatedPet = {
-        id: 'pet-1',
-        name: 'Thor Atualizado',
-        species: 'dog',
-        birthDate: new Date('2021-01-15'),
-        notes: 'Atualizado',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue(existingPet);
-      prismaMock.pet.update.mockResolvedValue(updatedPet);
-
-      const result = await service.update('pet-1', dto);
-
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: 'pet-1' },
-        include: {
-          user: true,
-        },
       });
+
+      prismaMock.pet.update.mockResolvedValue({
+        id: 'pet-1',
+        userId: 'user-1',
+        name: 'Thor Atualizado',
+      });
+
+      const result = await service.update('user-1', 'pet-1', dto);
 
       expect(prismaMock.pet.update).toHaveBeenCalledWith({
         where: { id: 'pet-1' },
@@ -260,91 +219,55 @@ describe('PetsService', () => {
         },
       });
 
-      expect(result).toEqual(updatedPet);
-    });
-
-    it('deve atualizar um pet sem birthDate quando ela não for informada', async () => {
-      const dto: UpdatePetDto = {
-        name: 'Thor Atualizado',
-        notes: 'Sem data',
-      };
-
-      const existingPet = {
+      expect(result).toEqual({
         id: 'pet-1',
-        name: 'Thor',
-        species: 'dog',
-        user: {
-          id: 'user-1',
-        },
-      };
-
-      const updatedPet = {
-        id: 'pet-1',
+        userId: 'user-1',
         name: 'Thor Atualizado',
-        species: 'dog',
-        notes: 'Sem data',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue(existingPet);
-      prismaMock.pet.update.mockResolvedValue(updatedPet);
-
-      const result = await service.update('pet-1', dto);
-
-      expect(prismaMock.pet.update).toHaveBeenCalledWith({
-        where: { id: 'pet-1' },
-        data: {
-          ...dto,
-          birthDate: undefined,
-        },
       });
-
-      expect(result).toEqual(updatedPet);
     });
 
-    it('deve lançar NotFoundException ao tentar atualizar um pet inexistente', async () => {
-      prismaMock.pet.findUnique.mockResolvedValue(null);
+    it('deve lançar NotFoundException ao tentar atualizar pet de outro usuário', async () => {
+      prismaMock.pet.findFirst.mockResolvedValue(null);
 
-      await expect(service.update('pet-1', { name: 'Teste' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('user-1', 'pet-1', { name: 'Teste' }),
+      ).rejects.toThrow(NotFoundException);
 
       expect(prismaMock.pet.update).not.toHaveBeenCalled();
     });
   });
 
   describe('remove', () => {
-    it('deve remover um pet existente', async () => {
-      const existingPet = {
+    it('deve remover um pet do usuário', async () => {
+      prismaMock.pet.findFirst.mockResolvedValue({
+        id: 'pet-1',
+        userId: 'user-1',
+        name: 'Thor',
+      });
+
+      prismaMock.pet.delete.mockResolvedValue({
         id: 'pet-1',
         name: 'Thor',
-        species: 'dog',
-        user: {
-          id: 'user-1',
-        },
-      };
+      });
 
-      const deletedPet = {
-        id: 'pet-1',
-        name: 'Thor',
-        species: 'dog',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue(existingPet);
-      prismaMock.pet.delete.mockResolvedValue(deletedPet);
-
-      const result = await service.remove('pet-1');
+      const result = await service.remove('user-1', 'pet-1');
 
       expect(prismaMock.pet.delete).toHaveBeenCalledWith({
         where: { id: 'pet-1' },
       });
 
-      expect(result).toEqual(deletedPet);
+      expect(result).toEqual({
+        id: 'pet-1',
+        name: 'Thor',
+      });
     });
 
-    it('deve lançar NotFoundException ao tentar remover um pet inexistente', async () => {
-      prismaMock.pet.findUnique.mockResolvedValue(null);
+    it('deve lançar NotFoundException ao tentar remover pet de outro usuário', async () => {
+      prismaMock.pet.findFirst.mockResolvedValue(null);
 
-      await expect(service.remove('pet-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('user-1', 'pet-1')).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(prismaMock.pet.delete).not.toHaveBeenCalled();
     });
