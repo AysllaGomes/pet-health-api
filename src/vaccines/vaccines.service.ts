@@ -1,14 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
+
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
+import { VaccineCategoryDto } from './dto/create-vaccine.dto';
 
 @Injectable()
 export class VaccinesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateVaccineDto) {
-    const petExists = await this.prisma.pet.findUnique({
-      where: { id: dto.petId },
+  async create(userId: string, dto: CreateVaccineDto) {
+    const petExists = await this.prisma.pet.findFirst({
+      where: {
+        id: dto.petId,
+        userId,
+      },
     });
 
     if (!petExists) {
@@ -19,7 +25,7 @@ export class VaccinesService {
       data: {
         petId: dto.petId,
         name: dto.name,
-        category: dto.category ?? 'VACCINE',
+        category: dto.category ?? VaccineCategoryDto.VACCINE,
         applicationDate: new Date(dto.applicationDate),
         nextDoseDate: dto.nextDoseDate ? new Date(dto.nextDoseDate) : undefined,
         veterinarian: dto.veterinarian,
@@ -30,8 +36,13 @@ export class VaccinesService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string) {
     return this.prisma.vaccine.findMany({
+      where: {
+        pet: {
+          userId,
+        },
+      },
       include: {
         pet: {
           select: {

@@ -1,10 +1,23 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { VaccinesService } from './vaccines.service';
+
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import * as authenticatedUserInterface from '../auth/interfaces/authenticated-user.interface';
+
+@ApiBearerAuth('JWT-auth')
 @ApiTags('vaccines')
+@UseGuards(JwtAuthGuard)
 @Controller('vaccines')
 export class VaccinesController {
   constructor(private readonly vaccinesService: VaccinesService) {}
@@ -17,17 +30,22 @@ export class VaccinesController {
     description: 'Vacina ou tratamento criado com sucesso.',
   })
   @ApiResponse({ status: 404, description: 'Pet não encontrado.' })
-  create(@Body() dto: CreateVaccineDto) {
-    return this.vaccinesService.create(dto);
+  create(
+    @Body() dto: CreateVaccineDto,
+    @CurrentUser() user: authenticatedUserInterface.AuthenticatedUser,
+  ) {
+    return this.vaccinesService.create(user.userId, dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar vacinas e tratamentos' })
+  @ApiOperation({
+    summary: 'Listar vacinas e tratamentos do usuário autenticado',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de vacinas e tratamentos retornada.',
   })
-  findAll() {
-    return this.vaccinesService.findAll();
+  findAll(@CurrentUser() user: authenticatedUserInterface.AuthenticatedUser) {
+    return this.vaccinesService.findAll(user.userId);
   }
 }

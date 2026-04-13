@@ -26,6 +26,15 @@ export async function bootstrap(): Promise<void> {
       'API para gerenciamento de saúde de pets, com vacinas, tratamentos e lembretes automáticos.',
     )
     .setVersion('1.0.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Informe o token JWT',
+      },
+      'JWT-auth',
+    )
     .addTag('users', 'Operações de usuários')
     .addTag('pets', 'Operações de pets')
     .addTag('vaccines', 'Operações de vacinas e tratamentos')

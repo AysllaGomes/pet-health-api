@@ -18,6 +18,11 @@ describe('PetsController', () => {
     remove: jest.fn(),
   };
 
+  const currentUser = {
+    userId: 'user-1',
+    email: 'ayslla@email.com',
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PetsController],
@@ -39,9 +44,8 @@ describe('PetsController', () => {
   });
 
   describe('create', () => {
-    it('deve chamar petsService.create com o dto e retornar o resultado', async () => {
+    it('deve chamar petsService.create com userId e dto', async () => {
       const dto: CreatePetDto = {
-        userId: 'user-1',
         name: 'Thor',
         species: 'dog',
         breed: 'Golden',
@@ -52,21 +56,22 @@ describe('PetsController', () => {
 
       const createdPet = {
         id: 'pet-1',
+        userId: 'user-1',
         ...dto,
       };
 
       petsServiceMock.create.mockResolvedValue(createdPet);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, currentUser);
 
       expect(petsServiceMock.create).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.create).toHaveBeenCalledWith(dto);
+      expect(petsServiceMock.create).toHaveBeenCalledWith('user-1', dto);
       expect(result).toEqual(createdPet);
     });
   });
 
   describe('findAll', () => {
-    it('deve chamar petsService.findAll e retornar a lista de pets', async () => {
+    it('deve chamar petsService.findAll com o userId', async () => {
       const pets = [
         {
           id: 'pet-1',
@@ -77,15 +82,16 @@ describe('PetsController', () => {
 
       petsServiceMock.findAll.mockResolvedValue(pets);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(currentUser);
 
       expect(petsServiceMock.findAll).toHaveBeenCalledTimes(1);
+      expect(petsServiceMock.findAll).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(pets);
     });
   });
 
   describe('findOne', () => {
-    it('deve chamar petsService.findOne com o id e retornar o pet', async () => {
+    it('deve chamar petsService.findOne com userId e id', async () => {
       const pet = {
         id: 'pet-1',
         name: 'Thor',
@@ -94,16 +100,16 @@ describe('PetsController', () => {
 
       petsServiceMock.findOne.mockResolvedValue(pet);
 
-      const result = await controller.findOne('pet-1');
+      const result = await controller.findOne('pet-1', currentUser);
 
       expect(petsServiceMock.findOne).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.findOne).toHaveBeenCalledWith('pet-1');
+      expect(petsServiceMock.findOne).toHaveBeenCalledWith('user-1', 'pet-1');
       expect(result).toEqual(pet);
     });
   });
 
   describe('update', () => {
-    it('deve chamar petsService.update com id e dto e retornar o pet atualizado', async () => {
+    it('deve chamar petsService.update com userId, id e dto', async () => {
       const dto: UpdatePetDto = {
         name: 'Thor Atualizado',
         notes: 'Atualizado',
@@ -116,16 +122,20 @@ describe('PetsController', () => {
 
       petsServiceMock.update.mockResolvedValue(updatedPet);
 
-      const result = await controller.update('pet-1', dto);
+      const result = await controller.update('pet-1', dto, currentUser);
 
       expect(petsServiceMock.update).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.update).toHaveBeenCalledWith('pet-1', dto);
+      expect(petsServiceMock.update).toHaveBeenCalledWith(
+        'user-1',
+        'pet-1',
+        dto,
+      );
       expect(result).toEqual(updatedPet);
     });
   });
 
   describe('remove', () => {
-    it('deve chamar petsService.remove com o id e retornar o pet removido', async () => {
+    it('deve chamar petsService.remove com userId e id', async () => {
       const removedPet = {
         id: 'pet-1',
         name: 'Thor',
@@ -133,10 +143,10 @@ describe('PetsController', () => {
 
       petsServiceMock.remove.mockResolvedValue(removedPet);
 
-      const result = await controller.remove('pet-1');
+      const result = await controller.remove('pet-1', currentUser);
 
       expect(petsServiceMock.remove).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.remove).toHaveBeenCalledWith('pet-1');
+      expect(petsServiceMock.remove).toHaveBeenCalledWith('user-1', 'pet-1');
       expect(result).toEqual(removedPet);
     });
   });

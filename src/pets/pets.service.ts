@@ -1,15 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
+
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PetsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createPetDto: CreatePetDto) {
+  async create(userId: string, createPetDto: CreatePetDto) {
     const userExists = await this.prisma.user.findUnique({
-      where: { id: createPetDto.userId },
+      where: { id: userId },
     });
 
     if (!userExists) {
@@ -18,6 +20,7 @@ export class PetsService {
 
     return this.prisma.pet.create({
       data: {
+        userId,
         ...createPetDto,
         birthDate: createPetDto.birthDate
           ? new Date(createPetDto.birthDate)
@@ -26,8 +29,9 @@ export class PetsService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string) {
     return this.prisma.pet.findMany({
+      where: { userId },
       include: {
         user: {
           select: {
@@ -41,9 +45,12 @@ export class PetsService {
     });
   }
 
-  async findOne(id: string) {
-    const pet = await this.prisma.pet.findUnique({
-      where: { id },
+  async findOne(userId: string, id: string) {
+    const pet = await this.prisma.pet.findFirst({
+      where: {
+        id,
+        userId,
+      },
       include: {
         user: true,
       },
@@ -56,8 +63,8 @@ export class PetsService {
     return pet;
   }
 
-  async update(id: string, updatePetDto: UpdatePetDto) {
-    await this.findOne(id);
+  async update(userId: string, id: string, updatePetDto: UpdatePetDto) {
+    await this.findOne(userId, id);
 
     return this.prisma.pet.update({
       where: { id },
@@ -70,8 +77,8 @@ export class PetsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(userId: string, id: string) {
+    await this.findOne(userId, id);
 
     return this.prisma.pet.delete({
       where: { id },

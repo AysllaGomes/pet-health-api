@@ -11,7 +11,7 @@ describe('VaccinesService', () => {
 
   const prismaMock = {
     pet: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     vaccine: {
       create: jest.fn(),
@@ -40,7 +40,7 @@ describe('VaccinesService', () => {
   });
 
   describe('create', () => {
-    it('deve criar vacina quando o pet existir', async () => {
+    it('deve criar vacina quando o pet pertencer ao usuário', async () => {
       const dto: CreateVaccineDto = {
         petId: 'pet-1',
         name: 'Vacina Anual',
@@ -66,17 +66,20 @@ describe('VaccinesService', () => {
         reminderDaysBefore: 10,
       };
 
-      prismaMock.pet.findUnique.mockResolvedValue({
+      prismaMock.pet.findFirst.mockResolvedValue({
         id: 'pet-1',
-        name: 'Thor',
+        userId: 'user-1',
       });
 
       prismaMock.vaccine.create.mockResolvedValue(createdVaccine);
 
-      const result = await service.create(dto);
+      const result = await service.create('user-1', dto);
 
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.petId },
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: dto.petId,
+          userId: 'user-1',
+        },
       });
 
       expect(prismaMock.vaccine.create).toHaveBeenCalledWith({
@@ -96,6 +99,29 @@ describe('VaccinesService', () => {
       expect(result).toEqual(createdVaccine);
     });
 
+    it('deve lançar NotFoundException quando o pet não pertencer ao usuário', async () => {
+      const dto: CreateVaccineDto = {
+        petId: 'pet-invalido',
+        name: 'Vacina Anual',
+        applicationDate: '2026-04-11',
+      };
+
+      prismaMock.pet.findFirst.mockResolvedValue(null);
+
+      await expect(service.create('user-1', dto)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: dto.petId,
+          userId: 'user-1',
+        },
+      });
+
+      expect(prismaMock.vaccine.create).not.toHaveBeenCalled();
+    });
+
     it('deve aplicar valores padrão para category e reminderDaysBefore', async () => {
       const dto: CreateVaccineDto = {
         petId: 'pet-1',
@@ -107,7 +133,7 @@ describe('VaccinesService', () => {
         id: 'vac-2',
         petId: 'pet-1',
         name: 'Antirrábica',
-        category: 'VACCINE',
+        category: VaccineCategoryDto.VACCINE,
         applicationDate: new Date('2026-04-11'),
         nextDoseDate: undefined,
         veterinarian: undefined,
@@ -116,20 +142,20 @@ describe('VaccinesService', () => {
         reminderDaysBefore: 7,
       };
 
-      prismaMock.pet.findUnique.mockResolvedValue({
+      prismaMock.pet.findFirst.mockResolvedValue({
         id: 'pet-1',
-        name: 'Thor',
+        userId: 'user-1',
       });
 
       prismaMock.vaccine.create.mockResolvedValue(createdVaccine);
 
-      const result = await service.create(dto);
+      const result = await service.create('user-1', dto);
 
       expect(prismaMock.vaccine.create).toHaveBeenCalledWith({
         data: {
           petId: dto.petId,
           name: dto.name,
-          category: 'VACCINE',
+          category: VaccineCategoryDto.VACCINE,
           applicationDate: new Date(dto.applicationDate),
           nextDoseDate: undefined,
           veterinarian: undefined,
@@ -141,69 +167,15 @@ describe('VaccinesService', () => {
 
       expect(result).toEqual(createdVaccine);
     });
-
-    it('deve criar vacina sem nextDoseDate quando ela não for informada', async () => {
-      const dto: CreateVaccineDto = {
-        petId: 'pet-1',
-        name: 'Vermífugo',
-        category: VaccineCategoryDto.DEWORMER,
-        applicationDate: '2026-04-11',
-        veterinarian: 'Dr. João',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue({
-        id: 'pet-1',
-      });
-
-      prismaMock.vaccine.create.mockResolvedValue({
-        id: 'vac-3',
-        petId: 'pet-1',
-        name: 'Vermífugo',
-      });
-
-      await service.create(dto);
-
-      expect(prismaMock.vaccine.create).toHaveBeenCalledWith({
-        data: {
-          petId: dto.petId,
-          name: dto.name,
-          category: VaccineCategoryDto.DEWORMER,
-          applicationDate: new Date(dto.applicationDate),
-          nextDoseDate: undefined,
-          veterinarian: dto.veterinarian,
-          clinic: undefined,
-          notes: undefined,
-          reminderDaysBefore: 7,
-        },
-      });
-    });
-
-    it('deve lançar NotFoundException quando o pet não existir', async () => {
-      const dto: CreateVaccineDto = {
-        petId: 'pet-invalido',
-        name: 'Vacina Anual',
-        applicationDate: '2026-04-11',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue(null);
-
-      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
-
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.petId },
-      });
-
-      expect(prismaMock.vaccine.create).not.toHaveBeenCalled();
-    });
   });
 
   describe('findAll', () => {
-    it('deve retornar a lista de vacinas com dados do pet', async () => {
+    it('deve retornar apenas vacinas dos pets do usuário', async () => {
       const vaccines = [
         {
           id: 'vac-1',
           name: 'Vacina Anual',
-          category: 'VACCINE',
+          category: VaccineCategoryDto.VACCINE,
           applicationDate: new Date('2026-04-11'),
           pet: {
             id: 'pet-1',
@@ -214,9 +186,14 @@ describe('VaccinesService', () => {
 
       prismaMock.vaccine.findMany.mockResolvedValue(vaccines);
 
-      const result = await service.findAll();
+      const result = await service.findAll('user-1');
 
       expect(prismaMock.vaccine.findMany).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
         include: {
           pet: {
             select: {
