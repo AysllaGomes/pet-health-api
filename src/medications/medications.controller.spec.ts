@@ -73,24 +73,40 @@ describe('MedicationsController', () => {
   });
 
   describe('findAll', () => {
-    it('deve chamar medicationsService.findAll com userId', async () => {
-      const medications = [
-        {
-          id: 'med-1',
-          name: 'Prednisona',
-          pet: {
-            id: 'pet-1',
-            name: 'Thor',
+    it('deve chamar medicationsService.findAll com userId e paginação', async () => {
+      const query = {
+        page: 1,
+        limit: 10,
+      };
+
+      const medications = {
+        data: [
+          {
+            id: 'med-1',
+            name: 'Prednisona',
+            pet: {
+              id: 'pet-1',
+              name: 'Thor',
+            },
           },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
         },
-      ];
+      };
 
       medicationsServiceMock.findAll.mockResolvedValue(medications);
 
-      const result = await controller.findAll(currentUser);
+      const result = await controller.findAll(currentUser, query);
 
       expect(medicationsServiceMock.findAll).toHaveBeenCalledTimes(1);
-      expect(medicationsServiceMock.findAll).toHaveBeenCalledWith('user-1');
+      expect(medicationsServiceMock.findAll).toHaveBeenCalledWith(
+        'user-1',
+        query,
+      );
       expect(result).toEqual(medications);
     });
   });

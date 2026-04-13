@@ -20,6 +20,7 @@ describe('MedicationsService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
   };
 
@@ -159,7 +160,7 @@ describe('MedicationsService', () => {
   });
 
   describe('findAll', () => {
-    it('deve retornar apenas os medicamentos dos pets do usuário', async () => {
+    it('deve retornar os medicamentos do usuário com paginação padrão', async () => {
       const medications = [
         {
           id: 'med-1',
@@ -177,8 +178,9 @@ describe('MedicationsService', () => {
       ];
 
       prismaMock.medication.findMany.mockResolvedValue(medications);
+      prismaMock.medication.count.mockResolvedValue(1);
 
-      const result = await service.findAll('user-1');
+      const result = await service.findAll('user-1', {});
 
       expect(prismaMock.medication.findMany).toHaveBeenCalledWith({
         where: {
@@ -204,9 +206,73 @@ describe('MedicationsService', () => {
         orderBy: {
           createdAt: 'desc',
         },
+        skip: 0,
+        take: 10,
       });
 
-      expect(result).toEqual(medications);
+      expect(prismaMock.medication.count).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+      });
+
+      expect(result).toEqual({
+        data: medications,
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+      });
+    });
+
+    it('deve retornar os medicamentos com paginação customizada', async () => {
+      prismaMock.medication.findMany.mockResolvedValue([]);
+      prismaMock.medication.count.mockResolvedValue(12);
+
+      await service.findAll('user-1', {
+        page: 2,
+        limit: 5,
+      });
+
+      expect(prismaMock.medication.findMany).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: 5,
+        take: 5,
+      });
+
+      expect(prismaMock.medication.count).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+      });
     });
   });
 

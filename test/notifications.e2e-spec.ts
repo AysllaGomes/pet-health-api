@@ -139,11 +139,20 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(2);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(2);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 2,
+      totalPages: 1,
+    });
 
     expect(
-      response.body.every((item: any) => item.pet?.id === petIdUser1),
+      response.body.data.every((item: any) => item.pet?.id === petIdUser1),
     ).toBe(true);
   });
 
@@ -153,11 +162,20 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser2}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(1);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
 
     expect(
-      response.body.every((item: any) => item.pet?.id === petIdUser2),
+      response.body.data.every((item: any) => item.pet?.id === petIdUser2),
     ).toBe(true);
   });
 
@@ -167,10 +185,19 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
-    expect(response.body[0].status).toBe('SENT');
-    expect(response.body[0].pet.id).toBe(petIdUser1);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].status).toBe('SENT');
+    expect(response.body.data[0].pet.id).toBe(petIdUser1);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
   });
 
   it('deve filtrar por type', async () => {
@@ -179,10 +206,19 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
-    expect(response.body[0].type).toBe('VACCINE_DEFAULT');
-    expect(response.body[0].pet.id).toBe(petIdUser1);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(1);
+    expect(response.body.data[0].type).toBe('VACCINE_DEFAULT');
+    expect(response.body.data[0].pet.id).toBe(petIdUser1);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
   });
 
   it('deve filtrar por petId', async () => {
@@ -191,27 +227,48 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+
     expect(
-      response.body.every((item: any) => item.pet.id === petIdUser1),
+      response.body.data.every((item: any) => item.pet.id === petIdUser1),
     ).toBe(true);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 2,
+      totalPages: 1,
+    });
   });
 
   it('deve combinar filtros', async () => {
     const response = await request(app.getHttpServer())
-      .get(`/notifications?status=FAILED&type=VACCINE_DEFAULT&petId=${petIdUser1}`)
+      .get(
+        `/notifications?status=FAILED&type=VACCINE_DEFAULT&petId=${petIdUser1}`,
+      )
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(1);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(1);
 
-    expect(response.body[0]).toMatchObject({
+    expect(response.body.data[0]).toMatchObject({
       status: 'FAILED',
       type: 'VACCINE_DEFAULT',
       pet: {
         id: petIdUser1,
       },
+    });
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
     });
   });
 
@@ -221,7 +278,35 @@ describe('NotificationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser2}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.length).toBe(0);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(0);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 0,
+    });
+  });
+
+  it('deve retornar meta de paginação corretamente', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/notifications?page=1&limit=1')
+      .set('Authorization', `Bearer ${accessTokenUser1}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(1);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
   });
 });

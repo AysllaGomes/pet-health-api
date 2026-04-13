@@ -114,10 +114,50 @@ describe('MedicationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser1}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
-    expect(response.body.some((item: any) => item.pet?.id === petIdUser1)).toBe(
-      true,
-    );
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(
+      response.body.data.some((item: any) => item.pet?.id === petIdUser1),
+    ).toBe(true);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
+  it('deve retornar meta de paginação em /medications', async () => {
+    await request(app.getHttpServer())
+      .post('/medications')
+      .set('Authorization', `Bearer ${accessTokenUser1}`)
+      .send({
+        petId: petIdUser1,
+        name: 'Antibiótico',
+        dosage: '2 comprimidos',
+        frequency: '2x ao dia',
+        startDate: '2026-04-12',
+        time: '09:00',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .get('/medications?page=1&limit=1')
+      .set('Authorization', `Bearer ${accessTokenUser1}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(response.body.data.length).toBe(1);
+
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 1,
+      total: 2,
+      totalPages: 2,
+    });
   });
 
   it('não deve permitir criar medicamento em pet de outro usuário', async () => {
@@ -140,9 +180,11 @@ describe('MedicationsController (e2e)', () => {
       .set('Authorization', `Bearer ${accessTokenUser2}`)
       .expect(200);
 
-    expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body).toHaveProperty('data');
+    expect(response.body).toHaveProperty('meta');
+    expect(Array.isArray(response.body.data)).toBe(true);
     expect(
-      response.body.some((item: any) => item.id === medicationIdUser1),
+      response.body.data.some((item: any) => item.id === medicationIdUser1),
     ).toBe(false);
   });
 

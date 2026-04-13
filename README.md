@@ -69,17 +69,16 @@ Utiliza **Nodemailer com SMTP (Gmail)**.
 
 ### Configuração
 
-Crie um arquivo `.env`:
+1. Copie o arquivo de exemplo:
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/pet_health_db"
-
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USER=seuemail@gmail.com
-MAIL_PASS=sua_app_password
-MAIL_FROM="Pet Health <seuemail@gmail.com>"
+```bash
+cp .env.example .env
 ```
+
+2. Preencha as variáveis:
+- DATABASE_URL
+- JWT_SECRET
+- MAIL_* (opcional para testes de e-mail)
 
 Importante:
 

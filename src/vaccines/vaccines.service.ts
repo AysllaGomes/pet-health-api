@@ -1,9 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
 import { PrismaService } from '../prisma/prisma.service';
-
-import { CreateVaccineDto } from './dto/create-vaccine.dto';
-import { VaccineCategoryDto } from './dto/create-vaccine.dto';
+import { CreateVaccineDto, VaccineCategoryDto } from './dto/create-vaccine.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @Injectable()
 export class VaccinesService {
@@ -36,22 +34,45 @@ export class VaccinesService {
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.vaccine.findMany({
-      where: {
-        pet: {
-          userId,
-        },
+  async findAll(userId: string, query: PaginationQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      pet: {
+        userId,
       },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.vaccine.findMany({
+        where,
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
+        orderBy: { applicationDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.vaccine.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { applicationDate: 'desc' },
-    });
+    };
   }
 }

@@ -16,6 +16,7 @@ describe('VaccinesService', () => {
     vaccine: {
       create: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn(),
     },
   };
 
@@ -170,7 +171,7 @@ describe('VaccinesService', () => {
   });
 
   describe('findAll', () => {
-    it('deve retornar apenas vacinas dos pets do usuário', async () => {
+    it('deve retornar as vacinas dos pets do usuário com paginação padrão', async () => {
       const vaccines = [
         {
           id: 'vac-1',
@@ -185,8 +186,9 @@ describe('VaccinesService', () => {
       ];
 
       prismaMock.vaccine.findMany.mockResolvedValue(vaccines);
+      prismaMock.vaccine.count.mockResolvedValue(1);
 
-      const result = await service.findAll('user-1');
+      const result = await service.findAll('user-1', {});
 
       expect(prismaMock.vaccine.findMany).toHaveBeenCalledWith({
         where: {
@@ -203,9 +205,64 @@ describe('VaccinesService', () => {
           },
         },
         orderBy: { applicationDate: 'desc' },
+        skip: 0,
+        take: 10,
       });
 
-      expect(result).toEqual(vaccines);
+      expect(prismaMock.vaccine.count).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+      });
+
+      expect(result).toEqual({
+        data: vaccines,
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
+        },
+      });
+    });
+
+    it('deve retornar as vacinas com paginação customizada', async () => {
+      prismaMock.vaccine.findMany.mockResolvedValue([]);
+      prismaMock.vaccine.count.mockResolvedValue(12);
+
+      await service.findAll('user-1', {
+        page: 2,
+        limit: 5,
+      });
+
+      expect(prismaMock.vaccine.findMany).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: { applicationDate: 'desc' },
+        skip: 5,
+        take: 5,
+      });
+
+      expect(prismaMock.vaccine.count).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
+      });
     });
   });
 });

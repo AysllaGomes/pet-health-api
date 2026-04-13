@@ -71,21 +71,34 @@ describe('PetsController', () => {
   });
 
   describe('findAll', () => {
-    it('deve chamar petsService.findAll com o userId', async () => {
-      const pets = [
-        {
-          id: 'pet-1',
-          name: 'Thor',
-          species: 'dog',
+    it('deve chamar petsService.findAll com userId e paginação', async () => {
+      const query = {
+        page: 1,
+        limit: 10,
+      };
+
+      const pets = {
+        data: [
+          {
+            id: 'pet-1',
+            name: 'Thor',
+            species: 'dog',
+          },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
         },
-      ];
+      };
 
       petsServiceMock.findAll.mockResolvedValue(pets);
 
-      const result = await controller.findAll(currentUser);
+      const result = await controller.findAll(currentUser, query);
 
       expect(petsServiceMock.findAll).toHaveBeenCalledTimes(1);
-      expect(petsServiceMock.findAll).toHaveBeenCalledWith('user-1');
+      expect(petsServiceMock.findAll).toHaveBeenCalledWith('user-1', query);
       expect(result).toEqual(pets);
     });
   });

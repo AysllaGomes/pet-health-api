@@ -1,19 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
-enum NotificationStatusDto {
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+
+export enum NotificationStatusDto {
   SENT = 'SENT',
   FAILED = 'FAILED',
 }
 
-enum NotificationTypeDto {
+export enum NotificationTypeDto {
   MEDICATION = 'MEDICATION',
   VACCINE_DEFAULT = 'VACCINE_DEFAULT',
   VACCINE_BUY = 'VACCINE_BUY',
   VACCINE_APPLY = 'VACCINE_APPLY',
 }
 
-export class QueryNotificationsDto {
+export class QueryNotificationsDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     enum: NotificationStatusDto,
     description: 'Filtrar por status da notificação',
