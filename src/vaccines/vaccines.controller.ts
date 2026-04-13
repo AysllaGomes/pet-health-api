@@ -1,9 +1,20 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { VaccinesService } from './vaccines.service';
+
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @ApiTags('vaccines')
 @Controller('vaccines')
 export class VaccinesController {

@@ -6,8 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -17,9 +19,13 @@ import {
 
 import { MedicationsService } from './medications.service';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 import { CreateMedicationDto } from './dto/create-medication.dto';
 import { UpdateMedicationDto } from './dto/update-medication.dto';
 
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @ApiTags('medications')
 @Controller('medications')
 export class MedicationsController {

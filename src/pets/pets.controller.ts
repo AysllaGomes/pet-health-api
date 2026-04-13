@@ -6,8 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -19,6 +21,10 @@ import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 @ApiTags('pets')
 @Controller('pets')
 export class PetsController {
