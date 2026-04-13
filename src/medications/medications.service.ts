@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreateMedicationDto } from './dto/create-medication.dto';
 import { UpdateMedicationDto } from './dto/update-medication.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @Injectable()
 export class MedicationsService {
@@ -36,32 +37,55 @@ export class MedicationsService {
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.medication.findMany({
-      where: {
-        pet: {
-          userId,
-        },
+  async findAll(userId: string, query: PaginationQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const where = {
+      pet: {
+        userId,
       },
-      include: {
-        pet: {
-          select: {
-            id: true,
-            name: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.medication.findMany({
+        where,
+        include: {
+          pet: {
+            select: {
+              id: true,
+              name: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
               },
             },
           },
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.medication.count({
+        where,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    };
   }
 
   async findOne(userId: string, id: string) {

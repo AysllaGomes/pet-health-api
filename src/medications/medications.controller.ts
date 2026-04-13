@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -25,6 +26,7 @@ import { UpdateMedicationDto } from './dto/update-medication.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import * as authenticatedUserInterface from '../auth/interfaces/authenticated-user.interface';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @ApiBearerAuth('JWT-auth')
 @ApiTags('medications')
@@ -48,8 +50,11 @@ export class MedicationsController {
   @Get()
   @ApiOperation({ summary: 'Listar medicamentos do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Lista de medicamentos retornada.' })
-  findAll(@CurrentUser() user: authenticatedUserInterface.AuthenticatedUser) {
-    return this.medicationsService.findAll(user.userId);
+  findAll(
+    @CurrentUser() user: authenticatedUserInterface.AuthenticatedUser,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.medicationsService.findAll(user.userId, query);
   }
 
   @Get(':id')
