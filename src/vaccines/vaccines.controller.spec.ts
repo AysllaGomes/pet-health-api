@@ -14,6 +14,11 @@ describe('VaccinesController', () => {
     findAll: jest.fn(),
   };
 
+  const currentUser = {
+    userId: 'user-1',
+    email: 'ayslla@email.com',
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [VaccinesController],
@@ -35,7 +40,7 @@ describe('VaccinesController', () => {
   });
 
   describe('create', () => {
-    it('deve chamar vaccinesService.create com o dto e retornar o resultado', async () => {
+    it('deve chamar vaccinesService.create com userId e dto', async () => {
       const dto: CreateVaccineDto = {
         petId: 'pet-1',
         name: 'Vacina Anual',
@@ -50,29 +55,21 @@ describe('VaccinesController', () => {
 
       const createdVaccine = {
         id: 'vac-1',
-        petId: 'pet-1',
-        name: 'Vacina Anual',
-        category: VaccineCategoryDto.VACCINE,
-        applicationDate: new Date('2026-04-11'),
-        nextDoseDate: new Date('2027-04-11'),
-        veterinarian: 'Dra. Ana',
-        clinic: 'Clínica Pet Feliz',
-        notes: 'Aplicação sem intercorrências',
-        reminderDaysBefore: 7,
+        ...dto,
       };
 
       vaccinesServiceMock.create.mockResolvedValue(createdVaccine);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, currentUser);
 
       expect(vaccinesServiceMock.create).toHaveBeenCalledTimes(1);
-      expect(vaccinesServiceMock.create).toHaveBeenCalledWith(dto);
+      expect(vaccinesServiceMock.create).toHaveBeenCalledWith('user-1', dto);
       expect(result).toEqual(createdVaccine);
     });
   });
 
   describe('findAll', () => {
-    it('deve chamar vaccinesService.findAll e retornar a lista', async () => {
+    it('deve chamar vaccinesService.findAll com userId', async () => {
       const vaccines = [
         {
           id: 'vac-1',
@@ -88,9 +85,10 @@ describe('VaccinesController', () => {
 
       vaccinesServiceMock.findAll.mockResolvedValue(vaccines);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(currentUser);
 
       expect(vaccinesServiceMock.findAll).toHaveBeenCalledTimes(1);
+      expect(vaccinesServiceMock.findAll).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(vaccines);
     });
   });
