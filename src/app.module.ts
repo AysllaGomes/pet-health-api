@@ -14,6 +14,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { VaccinesModule } from './vaccines/vaccines.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MedicationsModule } from './medications/medications.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MedicationsModule } from './medications/medications.module';
     VaccinesModule,
     RemindersModule,
     MedicationsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
