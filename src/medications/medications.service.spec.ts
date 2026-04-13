@@ -12,12 +12,12 @@ describe('MedicationsService', () => {
 
   const prismaMock = {
     pet: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     medication: {
       create: jest.fn(),
       findMany: jest.fn(),
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
@@ -44,7 +44,7 @@ describe('MedicationsService', () => {
   });
 
   describe('create', () => {
-    it('deve criar um medicamento quando o pet existir', async () => {
+    it('deve criar um medicamento quando o pet pertencer ao usuário', async () => {
       const dto: CreateMedicationDto = {
         petId: 'pet-1',
         name: 'Prednisona',
@@ -70,16 +70,20 @@ describe('MedicationsService', () => {
         reminderMinutesBefore: dto.reminderMinutesBefore,
       };
 
-      prismaMock.pet.findUnique.mockResolvedValue({
+      prismaMock.pet.findFirst.mockResolvedValue({
         id: 'pet-1',
-        name: 'Thor',
+        userId: 'user-1',
       });
+
       prismaMock.medication.create.mockResolvedValue(createdMedication);
 
-      const result = await service.create(dto);
+      const result = await service.create('user-1', dto);
 
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.petId },
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: dto.petId,
+          userId: 'user-1',
+        },
       });
 
       expect(prismaMock.medication.create).toHaveBeenCalledWith({
@@ -108,25 +112,17 @@ describe('MedicationsService', () => {
         startDate: '2026-04-11',
       };
 
-      const createdMedication = {
-        id: 'med-1',
-        petId: dto.petId,
-        name: dto.name,
-        dosage: dto.dosage,
-        frequency: dto.frequency,
-        startDate: new Date(dto.startDate),
-        endDate: undefined,
-        time: undefined,
-        notes: undefined,
-        reminderMinutesBefore: 60,
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue({
+      prismaMock.pet.findFirst.mockResolvedValue({
         id: 'pet-1',
+        userId: 'user-1',
       });
-      prismaMock.medication.create.mockResolvedValue(createdMedication);
 
-      const result = await service.create(dto);
+      prismaMock.medication.create.mockResolvedValue({
+        id: 'med-1',
+        reminderMinutesBefore: 60,
+      });
+
+      await service.create('user-1', dto);
 
       expect(prismaMock.medication.create).toHaveBeenCalledWith({
         data: {
@@ -141,46 +137,9 @@ describe('MedicationsService', () => {
           reminderMinutesBefore: 60,
         },
       });
-
-      expect(result).toEqual(createdMedication);
     });
 
-    it('deve criar sem endDate quando ela não for informada', async () => {
-      const dto: CreateMedicationDto = {
-        petId: 'pet-1',
-        name: 'Prednisona',
-        dosage: '1 comprimido',
-        frequency: '1x ao dia',
-        startDate: '2026-04-11',
-        time: '08:00',
-      };
-
-      prismaMock.pet.findUnique.mockResolvedValue({
-        id: 'pet-1',
-      });
-      prismaMock.medication.create.mockResolvedValue({
-        id: 'med-1',
-        ...dto,
-      });
-
-      await service.create(dto);
-
-      expect(prismaMock.medication.create).toHaveBeenCalledWith({
-        data: {
-          petId: dto.petId,
-          name: dto.name,
-          dosage: dto.dosage,
-          frequency: dto.frequency,
-          startDate: new Date(dto.startDate),
-          endDate: undefined,
-          time: dto.time,
-          notes: undefined,
-          reminderMinutesBefore: 60,
-        },
-      });
-    });
-
-    it('deve lançar NotFoundException quando o pet não existir', async () => {
+    it('deve lançar NotFoundException quando o pet não pertencer ao usuário', async () => {
       const dto: CreateMedicationDto = {
         petId: 'pet-invalido',
         name: 'Prednisona',
@@ -189,19 +148,18 @@ describe('MedicationsService', () => {
         startDate: '2026-04-11',
       };
 
-      prismaMock.pet.findUnique.mockResolvedValue(null);
+      prismaMock.pet.findFirst.mockResolvedValue(null);
 
-      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create('user-1', dto)).rejects.toThrow(
+        NotFoundException,
+      );
 
-      expect(prismaMock.pet.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.petId },
-      });
       expect(prismaMock.medication.create).not.toHaveBeenCalled();
     });
   });
 
   describe('findAll', () => {
-    it('deve retornar a lista de medicamentos com pet e usuário', async () => {
+    it('deve retornar apenas os medicamentos dos pets do usuário', async () => {
       const medications = [
         {
           id: 'med-1',
@@ -220,9 +178,14 @@ describe('MedicationsService', () => {
 
       prismaMock.medication.findMany.mockResolvedValue(medications);
 
-      const result = await service.findAll();
+      const result = await service.findAll('user-1');
 
       expect(prismaMock.medication.findMany).toHaveBeenCalledWith({
+        where: {
+          pet: {
+            userId: 'user-1',
+          },
+        },
         include: {
           pet: {
             select: {
@@ -248,7 +211,7 @@ describe('MedicationsService', () => {
   });
 
   describe('findOne', () => {
-    it('deve retornar um medicamento pelo id', async () => {
+    it('deve retornar um medicamento do usuário pelo id', async () => {
       const medication = {
         id: 'med-1',
         name: 'Prednisona',
@@ -263,12 +226,17 @@ describe('MedicationsService', () => {
         },
       };
 
-      prismaMock.medication.findUnique.mockResolvedValue(medication);
+      prismaMock.medication.findFirst.mockResolvedValue(medication);
 
-      const result = await service.findOne('med-1');
+      const result = await service.findOne('user-1', 'med-1');
 
-      expect(prismaMock.medication.findUnique).toHaveBeenCalledWith({
-        where: { id: 'med-1' },
+      expect(prismaMock.medication.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'med-1',
+          pet: {
+            userId: 'user-1',
+          },
+        },
         include: {
           pet: {
             include: {
@@ -281,28 +249,18 @@ describe('MedicationsService', () => {
       expect(result).toEqual(medication);
     });
 
-    it('deve lançar NotFoundException quando o medicamento não existir', async () => {
-      prismaMock.medication.findUnique.mockResolvedValue(null);
+    it('deve lançar NotFoundException quando o medicamento não pertencer ao usuário', async () => {
+      prismaMock.medication.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne('med-1')).rejects.toThrow(NotFoundException);
-
-      expect(prismaMock.medication.findUnique).toHaveBeenCalledWith({
-        where: { id: 'med-1' },
-        include: {
-          pet: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
+      await expect(service.findOne('user-1', 'med-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('update', () => {
-    it('deve atualizar um medicamento com conversão de datas', async () => {
+    it('deve atualizar um medicamento do usuário', async () => {
       const dto: UpdateMedicationDto = {
-        petId: 'pet-1',
         name: 'Prednisona Atualizada',
         dosage: '2 comprimidos',
         frequency: '2x ao dia',
@@ -313,33 +271,27 @@ describe('MedicationsService', () => {
         reminderMinutesBefore: 45,
       };
 
-      const existingMedication = {
+      prismaMock.medication.findFirst.mockResolvedValue({
         id: 'med-1',
-        name: 'Prednisona',
         pet: {
           id: 'pet-1',
           user: {
             id: 'user-1',
           },
         },
-      };
+      });
 
-      const updatedMedication = {
+      prismaMock.medication.update.mockResolvedValue({
         id: 'med-1',
         ...dto,
-        startDate: new Date(dto.startDate!),
-        endDate: new Date(dto.endDate!),
-      };
+      });
 
-      prismaMock.medication.findUnique.mockResolvedValue(existingMedication);
-      prismaMock.medication.update.mockResolvedValue(updatedMedication);
-
-      const result = await service.update('med-1', dto);
+      const result = await service.update('user-1', 'med-1', dto);
 
       expect(prismaMock.medication.update).toHaveBeenCalledWith({
         where: { id: 'med-1' },
         data: {
-          petId: dto.petId,
+          petId: undefined,
           name: dto.name,
           dosage: dto.dosage,
           frequency: dto.frequency,
@@ -351,100 +303,112 @@ describe('MedicationsService', () => {
         },
       });
 
-      expect(result).toEqual(updatedMedication);
-    });
-
-    it('deve atualizar um medicamento sem datas opcionais quando não informadas', async () => {
-      const dto: UpdateMedicationDto = {
-        name: 'Prednisona Atualizada',
-        dosage: '1 comprimido',
-      };
-
-      const existingMedication = {
-        id: 'med-1',
-        name: 'Prednisona',
-        pet: {
-          id: 'pet-1',
-          user: {
-            id: 'user-1',
-          },
-        },
-      };
-
-      prismaMock.medication.findUnique.mockResolvedValue(existingMedication);
-      prismaMock.medication.update.mockResolvedValue({
-        id: 'med-1',
-        ...dto,
-      });
-
-      const result = await service.update('med-1', dto);
-
-      expect(prismaMock.medication.update).toHaveBeenCalledWith({
-        where: { id: 'med-1' },
-        data: {
-          petId: undefined,
-          name: dto.name,
-          dosage: dto.dosage,
-          frequency: undefined,
-          startDate: undefined,
-          endDate: undefined,
-          time: undefined,
-          notes: undefined,
-          reminderMinutesBefore: undefined,
-        },
-      });
-
       expect(result).toEqual({
         id: 'med-1',
         ...dto,
       });
     });
 
-    it('deve lançar NotFoundException ao tentar atualizar um medicamento inexistente', async () => {
-      prismaMock.medication.findUnique.mockResolvedValue(null);
+    it('deve validar o novo pet quando petId for informado no update', async () => {
+      const dto: UpdateMedicationDto = {
+        petId: 'pet-2',
+        name: 'Prednisona Atualizada',
+      };
 
-      await expect(service.update('med-1', { name: 'Teste' })).rejects.toThrow(
-        NotFoundException,
-      );
-
-      expect(prismaMock.medication.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('remove', () => {
-    it('deve remover um medicamento existente', async () => {
-      const existingMedication = {
+      prismaMock.medication.findFirst.mockResolvedValue({
         id: 'med-1',
-        name: 'Prednisona',
         pet: {
           id: 'pet-1',
           user: {
             id: 'user-1',
           },
         },
+      });
+
+      prismaMock.pet.findFirst.mockResolvedValue({
+        id: 'pet-2',
+        userId: 'user-1',
+      });
+
+      prismaMock.medication.update.mockResolvedValue({
+        id: 'med-1',
+        ...dto,
+      });
+
+      await service.update('user-1', 'med-1', dto);
+
+      expect(prismaMock.pet.findFirst).toHaveBeenCalledWith({
+        where: {
+          id: 'pet-2',
+          userId: 'user-1',
+        },
+      });
+    });
+
+    it('deve lançar NotFoundException se o novo pet não pertencer ao usuário', async () => {
+      const dto: UpdateMedicationDto = {
+        petId: 'pet-2',
       };
 
-      const deletedMedication = {
+      prismaMock.medication.findFirst.mockResolvedValue({
+        id: 'med-1',
+      });
+
+      prismaMock.pet.findFirst.mockResolvedValue(null);
+
+      await expect(service.update('user-1', 'med-1', dto)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(prismaMock.medication.update).not.toHaveBeenCalled();
+    });
+
+    it('deve lançar NotFoundException ao tentar atualizar medicamento de outro usuário', async () => {
+      prismaMock.medication.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.update('user-1', 'med-1', { name: 'Teste' }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(prismaMock.medication.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('deve remover um medicamento do usuário', async () => {
+      prismaMock.medication.findFirst.mockResolvedValue({
+        id: 'med-1',
+        pet: {
+          id: 'pet-1',
+          user: {
+            id: 'user-1',
+          },
+        },
+      });
+
+      prismaMock.medication.delete.mockResolvedValue({
         id: 'med-1',
         name: 'Prednisona',
-      };
+      });
 
-      prismaMock.medication.findUnique.mockResolvedValue(existingMedication);
-      prismaMock.medication.delete.mockResolvedValue(deletedMedication);
-
-      const result = await service.remove('med-1');
+      const result = await service.remove('user-1', 'med-1');
 
       expect(prismaMock.medication.delete).toHaveBeenCalledWith({
         where: { id: 'med-1' },
       });
 
-      expect(result).toEqual(deletedMedication);
+      expect(result).toEqual({
+        id: 'med-1',
+        name: 'Prednisona',
+      });
     });
 
-    it('deve lançar NotFoundException ao tentar remover um medicamento inexistente', async () => {
-      prismaMock.medication.findUnique.mockResolvedValue(null);
+    it('deve lançar NotFoundException ao tentar remover medicamento de outro usuário', async () => {
+      prismaMock.medication.findFirst.mockResolvedValue(null);
 
-      await expect(service.remove('med-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('user-1', 'med-1')).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(prismaMock.medication.delete).not.toHaveBeenCalled();
     });

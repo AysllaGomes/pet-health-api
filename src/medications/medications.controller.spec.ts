@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { MedicationsController } from './medications.controller';
 import { MedicationsService } from './medications.service';
+
+import { MedicationsController } from './medications.controller';
+
 import { CreateMedicationDto } from './dto/create-medication.dto';
 import { UpdateMedicationDto } from './dto/update-medication.dto';
 
@@ -14,6 +16,11 @@ describe('MedicationsController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+  };
+
+  const currentUser = {
+    userId: 'user-1',
+    email: 'ayslla@email.com',
   };
 
   beforeEach(async () => {
@@ -37,7 +44,7 @@ describe('MedicationsController', () => {
   });
 
   describe('create', () => {
-    it('deve chamar medicationsService.create com o dto e retornar o resultado', async () => {
+    it('deve chamar medicationsService.create com userId e dto', async () => {
       const dto: CreateMedicationDto = {
         petId: 'pet-1',
         name: 'Prednisona',
@@ -52,111 +59,90 @@ describe('MedicationsController', () => {
 
       const createdMedication = {
         id: 'med-1',
-        petId: dto.petId,
-        name: dto.name,
-        dosage: dto.dosage,
-        frequency: dto.frequency,
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate!),
-        time: dto.time,
-        notes: dto.notes,
-        reminderMinutesBefore: dto.reminderMinutesBefore,
+        ...dto,
       };
 
       medicationsServiceMock.create.mockResolvedValue(createdMedication);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, currentUser);
 
       expect(medicationsServiceMock.create).toHaveBeenCalledTimes(1);
-      expect(medicationsServiceMock.create).toHaveBeenCalledWith(dto);
+      expect(medicationsServiceMock.create).toHaveBeenCalledWith('user-1', dto);
       expect(result).toEqual(createdMedication);
     });
   });
 
   describe('findAll', () => {
-    it('deve chamar medicationsService.findAll e retornar a lista', async () => {
+    it('deve chamar medicationsService.findAll com userId', async () => {
       const medications = [
         {
           id: 'med-1',
           name: 'Prednisona',
-          dosage: '1 comprimido',
-          frequency: '1x ao dia',
           pet: {
             id: 'pet-1',
             name: 'Thor',
-            user: {
-              id: 'user-1',
-              name: 'Ayslla',
-              email: 'ayslla@email.com',
-            },
           },
         },
       ];
 
       medicationsServiceMock.findAll.mockResolvedValue(medications);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(currentUser);
 
       expect(medicationsServiceMock.findAll).toHaveBeenCalledTimes(1);
+      expect(medicationsServiceMock.findAll).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(medications);
     });
   });
 
   describe('findOne', () => {
-    it('deve chamar medicationsService.findOne com o id e retornar o medicamento', async () => {
+    it('deve chamar medicationsService.findOne com userId e id', async () => {
       const medication = {
         id: 'med-1',
         name: 'Prednisona',
-        dosage: '1 comprimido',
-        frequency: '1x ao dia',
-        pet: {
-          id: 'pet-1',
-          name: 'Thor',
-        },
       };
 
       medicationsServiceMock.findOne.mockResolvedValue(medication);
 
-      const result = await controller.findOne('med-1');
+      const result = await controller.findOne('med-1', currentUser);
 
       expect(medicationsServiceMock.findOne).toHaveBeenCalledTimes(1);
-      expect(medicationsServiceMock.findOne).toHaveBeenCalledWith('med-1');
+      expect(medicationsServiceMock.findOne).toHaveBeenCalledWith(
+        'user-1',
+        'med-1',
+      );
       expect(result).toEqual(medication);
     });
   });
 
   describe('update', () => {
-    it('deve chamar medicationsService.update com id e dto e retornar o medicamento atualizado', async () => {
+    it('deve chamar medicationsService.update com userId, id e dto', async () => {
       const dto: UpdateMedicationDto = {
         name: 'Prednisona Atualizada',
         dosage: '2 comprimidos',
-        frequency: '2x ao dia',
-        startDate: '2026-04-12',
-        endDate: '2026-04-22',
-        time: '09:00',
-        notes: 'Atualizado',
-        reminderMinutesBefore: 45,
       };
 
       const updatedMedication = {
         id: 'med-1',
         ...dto,
-        startDate: new Date(dto.startDate!),
-        endDate: new Date(dto.endDate!),
       };
 
       medicationsServiceMock.update.mockResolvedValue(updatedMedication);
 
-      const result = await controller.update('med-1', dto);
+      const result = await controller.update('med-1', dto, currentUser);
 
       expect(medicationsServiceMock.update).toHaveBeenCalledTimes(1);
-      expect(medicationsServiceMock.update).toHaveBeenCalledWith('med-1', dto);
+      expect(medicationsServiceMock.update).toHaveBeenCalledWith(
+        'user-1',
+        'med-1',
+        dto,
+      );
       expect(result).toEqual(updatedMedication);
     });
   });
 
   describe('remove', () => {
-    it('deve chamar medicationsService.remove com o id e retornar o medicamento removido', async () => {
+    it('deve chamar medicationsService.remove com userId e id', async () => {
       const removedMedication = {
         id: 'med-1',
         name: 'Prednisona',
@@ -164,10 +150,13 @@ describe('MedicationsController', () => {
 
       medicationsServiceMock.remove.mockResolvedValue(removedMedication);
 
-      const result = await controller.remove('med-1');
+      const result = await controller.remove('med-1', currentUser);
 
       expect(medicationsServiceMock.remove).toHaveBeenCalledTimes(1);
-      expect(medicationsServiceMock.remove).toHaveBeenCalledWith('med-1');
+      expect(medicationsServiceMock.remove).toHaveBeenCalledWith(
+        'user-1',
+        'med-1',
+      );
       expect(result).toEqual(removedMedication);
     });
   });

@@ -9,9 +9,12 @@ import { UpdateMedicationDto } from './dto/update-medication.dto';
 export class MedicationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateMedicationDto) {
-    const petExists = await this.prisma.pet.findUnique({
-      where: { id: dto.petId },
+  async create(userId: string, dto: CreateMedicationDto) {
+    const petExists = await this.prisma.pet.findFirst({
+      where: {
+        id: dto.petId,
+        userId,
+      },
     });
 
     if (!petExists) {
@@ -33,8 +36,13 @@ export class MedicationsService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string) {
     return this.prisma.medication.findMany({
+      where: {
+        pet: {
+          userId,
+        },
+      },
       include: {
         pet: {
           select: {
@@ -56,9 +64,14 @@ export class MedicationsService {
     });
   }
 
-  async findOne(id: string) {
-    const medication = await this.prisma.medication.findUnique({
-      where: { id },
+  async findOne(userId: string, id: string) {
+    const medication = await this.prisma.medication.findFirst({
+      where: {
+        id,
+        pet: {
+          userId,
+        },
+      },
       include: {
         pet: {
           include: {
@@ -75,8 +88,21 @@ export class MedicationsService {
     return medication;
   }
 
-  async update(id: string, dto: UpdateMedicationDto) {
-    await this.findOne(id);
+  async update(userId: string, id: string, dto: UpdateMedicationDto) {
+    await this.findOne(userId, id);
+
+    if (dto.petId) {
+      const petExists = await this.prisma.pet.findFirst({
+        where: {
+          id: dto.petId,
+          userId,
+        },
+      });
+
+      if (!petExists) {
+        throw new NotFoundException('Pet não encontrado.');
+      }
+    }
 
     return this.prisma.medication.update({
       where: { id },
@@ -94,8 +120,8 @@ export class MedicationsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(userId: string, id: string) {
+    await this.findOne(userId, id);
 
     return this.prisma.medication.delete({
       where: { id },
