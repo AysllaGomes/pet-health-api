@@ -188,6 +188,14 @@ npm run test:e2e
 GET /health
 
 ---
+## Próximos passos
 
+* [x] Autenticação com JWT
+* [x] Módulo de medicamentos com horários
+* [ ] Dashboard de próximos eventos
+* [ ] Deploy em ambiente cloud
+* [ ] Notificações via push
+
+---
 ## Autor
 Projeto desenvolvido por [@AysllaGomes](https://github.com/AysllaGomes)
