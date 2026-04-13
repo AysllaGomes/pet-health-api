@@ -1,224 +1,137 @@
 # Pet Health API
 
-API para gerenciamento de saúde de pets, com controle de vacinas, antipulgas, vermífugos e envio automático de lembretes por e-mail.
+API para gerenciamento de saúde de pets, com controle de vacinas, medicamentos, notificações e lembretes automáticos.
+
+---
+
+## Objetivo
+
+O **Pet Health API** foi criado para ajudar tutores a organizarem a saúde dos seus pets, centralizando informações como:
+
+- Vacinas
+- Medicamentos
+- Lembretes automáticos
+- Histórico de notificações
+
+Tudo isso com autenticação segura e isolamento de dados por usuário.
 
 ---
 
 ## Tecnologias
 
-* Node.js
-* NestJS
-* Prisma ORM
-* PostgreSQL
-* Nodemailer
-* @nestjs/schedule (cron jobs)
+- Node.js
+- NestJS
+- Prisma ORM
+- PostgreSQL
+- JWT (Autenticação)
+- Swagger
+- Jest (unit + e2e)
 
 ---
 
-## Funcionalidades
+## Diferenciais
 
-### Usuários
-
-* Criar usuário
-* Listar usuários
-* Atualizar usuário
-* Remover usuário
-
-### Pets
-
-* Cadastro de pets
-* Relacionamento com usuário
-
-### Vacinas / Tratamentos
-
-* Cadastro de vacina/remédio
-* Definição de data de aplicação
-* Definição de próxima dose
-* Categoria do tratamento:
-
-    * `VACCINE`
-    * `ANTIPARASITIC`
-    * `DEWORMER`
-
-### Medicamentos controlados
-
-* Cadastro de medicamentos
-* Definição de dosagem, frequência e horário
-* Envio automático de lembretes por e-mail antes do horário configurado
+- Autenticação com JWT
+- Isolamento de dados por usuário (multi-tenant)
+- Lembretes automáticos para vacinas e medicamentos
+- Controle de notificações enviadas (SENT / FAILED)
+- Paginação padronizada
+- Testes unitários e e2e
+- Healthcheck
+- Documentação com Swagger
 
 ---
 
-## Notificações automáticas
+## Autenticação
 
-* Cron job executado periodicamente
-* Envio de e-mails com base na regra
+A API utiliza JWT.
 
-### Regras de lembrete
+### Fluxo:
 
-| Categoria     | Comportamento                                   |
-| ------------- | ----------------------------------------------- |
-| VACCINE       | Envia X dias antes (`reminderDaysBefore`)       |
-| ANTIPARASITIC | Envia 5 dias antes (comprar) + no dia (aplicar) |
-| DEWORMER      | Envia 5 dias antes (comprar) + no dia (aplicar) |
+1. Criar usuário → `/users`
+2. Login → `/auth/login`
+3. Usar token nas rotas protegidas
+
+Authorization: Bearer <access_token>
 
 ---
 
-## Envio de e-mail
+## Fluxo principal da aplicação
 
-Utiliza **Nodemailer com SMTP (Gmail)**.
+Usuário → Login → Cria Pet → Adiciona Vacinas/Medicamentos  
+→ Sistema processa reminders automaticamente  
+→ Notificações são registradas  
+→ Usuário consulta histórico
 
-### Configuração
+---
 
-1. Copie o arquivo de exemplo:
+## Instalação
+
+```bash
+git clone <repo-url>
+cd pet-health-api
+npm install
+```
+
+---
+
+## Configuração
 
 ```bash
 cp .env.example .env
 ```
 
-2. Preencha as variáveis:
-- DATABASE_URL
-- JWT_SECRET
-- MAIL_* (opcional para testes de e-mail)
+Preencha:
 
-Importante:
-
-* Usar **App Password do Gmail**
-* Ativar verificação em duas etapas
-
----
-
-## Banco de dados
-
-### Modelo principal: Vaccine
-
-```ts
-Vaccine {
-  id
-  petId
-  name
-  category
-  applicationDate
-  nextDoseDate
-  reminderDaysBefore
-}
-```
-
-### Categorias
-
-```ts
-VACCINE
-ANTIPARASITIC
-DEWORMER
-```
+DATABASE_URL=  
+JWT_SECRET=  
+JWT_EXPIRES_IN=1d  
+MAIL_HOST=  
+MAIL_PORT=  
+MAIL_USER=  
+MAIL_PASS=  
+MAIL_FROM=
 
 ---
 
-## Scheduler (Cron)
-
-```ts
-@Cron(CronExpression.EVERY_8_HOURS)
-```
-
-Função:
-
-* Verificar vacinas com lembretes ativos
-* Enviar e-mails
-* Registrar notificações enviadas
-
----
-
-## Controle de duplicidade
-
-A tabela `Notification` é usada para:
-
-* Evitar envio duplicado
-* Registrar histórico de envio
-* Armazenar status (`SENT`, `FAILED`)
-
----
-
-## Como rodar o projeto
-
-### 1. Instalar dependências
-
-```bash
-npm install
-```
-
-### 2. Configurar banco
-
-```bash
-npx prisma migrate dev
-```
-
-### 3. Rodar aplicação
+## Executando
 
 ```bash
 npm run start:dev
 ```
 
-API disponível em:
+Swagger: http://localhost:3000/docs
 
-```
-http://localhost:3000
+---
+
+## Testes
+
+```bash
+npm run test
+npm run test:e2e
 ```
 
 ---
 
-## Exemplos de uso
-
-### Criar vacina comum
-
-```json
-POST /vaccines
-```
+## Paginação
 
 ```json
 {
-  "petId": "ID_DO_PET",
-  "name": "Vacina Anual",
-  "category": "VACCINE",
-  "applicationDate": "2026-04-11",
-  "nextDoseDate": "2027-04-11",
-  "reminderDaysBefore": 7
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 20,
+    "totalPages": 2
+  }
 }
 ```
 
 ---
 
-### Criar antipulgas
+## Healthcheck
 
-```json
-{
-  "petId": "ID_DO_PET",
-  "name": "Antipulgas",
-  "category": "ANTIPARASITIC",
-  "applicationDate": "2026-04-11",
-  "nextDoseDate": "2026-04-16"
-}
-```
-
----
-
-## Próximos passos
-
-* [ ] Autenticação com JWT
-* [x] Módulo de medicamentos com horários
-* [ ] Dashboard de próximos eventos
-* [ ] Deploy em ambiente cloud
-* [ ] Notificações via push
-
----
-
-## Observações
-
-* Todas as datas são tratadas em **UTC**
-* O cron funciona apenas com a aplicação em execução
-* Para produção, recomenda-se:
-
-    * Uso de filas (BullMQ)
-    * Workers separados
-    * Serviços de e-mail dedicados (SendGrid, Resend, etc.)
+GET /health
 
 ---
 
