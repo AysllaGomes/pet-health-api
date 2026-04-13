@@ -13,7 +13,7 @@ export class CreateUserDto {
     example: 'user@email.com',
     description: 'E-mail do usuário',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'E-mail inválido' })
   email: string;
 
   @ApiProperty({
@@ -21,6 +21,8 @@ export class CreateUserDto {
     description: 'Senha do usuário',
     minLength: 6,
   })
-  @MinLength(6)
+  @MinLength(6, {
+    message: 'Senha deve ter no mínimo 6 caracteres',
+  })
   password: string;
 }

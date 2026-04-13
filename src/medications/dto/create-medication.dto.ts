@@ -58,7 +58,7 @@ export class CreateMedicationDto {
   })
   @IsOptional()
   @Matches(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: 'time deve estar no formato HH:mm',
+    message: 'Horário deve estar no formato HH:mm',
   })
   time?: string;
 
