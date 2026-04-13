@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication;
+  let accessToken: string;
 
   const uniqueEmail = `ayslla_${Date.now()}@email.com`;
   const password = '123456';
@@ -54,6 +55,8 @@ describe('AuthController (e2e)', () => {
 
     expect(response.body).toHaveProperty('access_token');
     expect(typeof response.body.access_token).toBe('string');
+
+    accessToken = response.body.access_token;
   });
 
   it('deve retornar 401 para senha inválida', async () => {
@@ -74,5 +77,21 @@ describe('AuthController (e2e)', () => {
         password: '123456',
       })
       .expect(401);
+  });
+
+  it('deve retornar 401 ao acessar /auth/me sem token', async () => {
+    await request(app.getHttpServer()).get('/auth/me').expect(401);
+  });
+
+  it('deve retornar os dados do usuário autenticado em /auth/me', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(response.body).toHaveProperty('id');
+    expect(response.body.name).toBe('Ayslla Caroline');
+    expect(response.body.email).toBe(uniqueEmail);
+    expect(response.body).not.toHaveProperty('password');
   });
 });

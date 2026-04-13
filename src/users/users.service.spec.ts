@@ -303,4 +303,37 @@ describe('UsersService', () => {
       expect(prismaMock.user.delete).not.toHaveBeenCalled();
     });
   });
+
+  describe('findMe', () => {
+    it('deve retornar os dados do usuário autenticado', async () => {
+      const user = {
+        id: 'user-1',
+        name: 'Ayslla',
+        email: 'ayslla@email.com',
+        createdAt: new Date('2026-04-10T22:13:36.980Z'),
+      };
+
+      prismaMock.user.findUnique.mockResolvedValue(user);
+
+      const result = await service.findMe('user-1');
+
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+        },
+      });
+
+      expect(result).toEqual(user);
+    });
+
+    it('deve lançar NotFoundException quando o usuário não existir', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.findMe('user-1')).rejects.toThrow(NotFoundException);
+    });
+  });
 });
