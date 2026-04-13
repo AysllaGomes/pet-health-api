@@ -69,26 +69,39 @@ describe('VaccinesController', () => {
   });
 
   describe('findAll', () => {
-    it('deve chamar vaccinesService.findAll com userId', async () => {
-      const vaccines = [
-        {
-          id: 'vac-1',
-          name: 'Vacina Anual',
-          category: VaccineCategoryDto.VACCINE,
-          applicationDate: new Date('2026-04-11'),
-          pet: {
-            id: 'pet-1',
-            name: 'Thor',
+    it('deve chamar vaccinesService.findAll com userId e paginação', async () => {
+      const query = {
+        page: 1,
+        limit: 10,
+      };
+
+      const vaccines = {
+        data: [
+          {
+            id: 'vac-1',
+            name: 'Vacina Anual',
+            category: VaccineCategoryDto.VACCINE,
+            applicationDate: new Date('2026-04-11'),
+            pet: {
+              id: 'pet-1',
+              name: 'Thor',
+            },
           },
+        ],
+        meta: {
+          page: 1,
+          limit: 10,
+          total: 1,
+          totalPages: 1,
         },
-      ];
+      };
 
       vaccinesServiceMock.findAll.mockResolvedValue(vaccines);
 
-      const result = await controller.findAll(currentUser);
+      const result = await controller.findAll(currentUser, query);
 
       expect(vaccinesServiceMock.findAll).toHaveBeenCalledTimes(1);
-      expect(vaccinesServiceMock.findAll).toHaveBeenCalledWith('user-1');
+      expect(vaccinesServiceMock.findAll).toHaveBeenCalledWith('user-1', query);
       expect(result).toEqual(vaccines);
     });
   });

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -8,8 +8,8 @@ import {
 } from '@nestjs/swagger';
 
 import { VaccinesService } from './vaccines.service';
-
 import { CreateVaccineDto } from './dto/create-vaccine.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -45,7 +45,10 @@ export class VaccinesController {
     status: 200,
     description: 'Lista de vacinas e tratamentos retornada.',
   })
-  findAll(@CurrentUser() user: authenticatedUserInterface.AuthenticatedUser) {
-    return this.vaccinesService.findAll(user.userId);
+  findAll(
+    @CurrentUser() user: authenticatedUserInterface.AuthenticatedUser,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.vaccinesService.findAll(user.userId, query);
   }
 }
