@@ -65,6 +65,32 @@ Usuário → Login → Cria Pet → Adiciona Vacinas/Medicamentos
 
 ---
 
+## Arquitetura
+```
+Client
+  ↓
+Controllers
+  ↓
+Services
+  ↓
+Prisma ORM
+  ↓
+PostgreSQL
+
++----------------------+
+|   Reminders (Cron)   |
++----------------------+
+        ↓
++----------------------+
+| NotificationService  |
++----------------------+
+        ↓
++----------------------+
+|     MailService      |
++----------------------+
+```
+---
+
 ## Instalação
 
 ```bash
@@ -110,6 +136,34 @@ Swagger: http://localhost:3000/docs
 npm run test
 npm run test:e2e
 ```
+
+---
+
+## Funcionalidades
+
+### Usuários
+- Criar usuário
+- Login
+- `/auth/me`
+
+### Pets
+- CRUD completo
+- Isolamento por usuário
+
+### Vacinas
+- Registro de vacinas
+- Controle de próxima dose
+
+### Medicamentos
+- Controle de tratamentos
+- Lembretes automáticos
+
+### Notificações
+- Registro de envio
+- Status SENT / FAILED
+
+### Reminders
+- Processamento automático via cron
 
 ---
 
