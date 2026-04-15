@@ -52,7 +52,9 @@ A API utiliza JWT.
 2. Login → `/auth/login`
 3. Usar token nas rotas protegidas
 
+```bash
 Authorization: Bearer <access_token>
+```
 
 ---
 
@@ -66,6 +68,7 @@ Usuário → Login → Cria Pet → Adiciona Vacinas/Medicamentos
 ---
 
 ## Arquitetura
+
 ```
 Client
   ↓
@@ -89,44 +92,141 @@ PostgreSQL
 |     MailService      |
 +----------------------+
 ```
+
 ---
 
-## Instalação
+# Como executar
 
+## Opção 1: Com Docker
+
+### Pré-requisitos
+- Docker
+- Docker Compose
+
+### 1. Criar arquivo de ambiente
+```bash
+cp .env.docker.example .env.docker
+```
+
+### 2. Subir os containers
+```bash
+docker compose up --build
+```
+
+### 3. Acessar a aplicação
+- API: http://localhost:3000
+- Swagger: http://localhost:3000/docs
+
+### 4. Parar containers
+```bash
+docker compose down
+```
+
+### 5. Resetar banco
+```bash
+docker compose down -v
+```
+
+---
+
+## Estrutura Docker
+
+O ambiente possui dois serviços:
+
+- **api** → aplicação NestJS
+- **db** → PostgreSQL
+
+### Arquivos
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.docker.example`
+
+---
+
+## Banco de dados (IMPORTANTE)
+
+- O Docker usa um banco **separado do seu local**
+- Dados não são compartilhados automaticamente
+- Persistência via volume `postgres_data`
+
+Reset completo:
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Comandos úteis Docker
+
+### Ver logs
+```bash
+docker compose logs -f
+```
+
+### Logs da API
+```bash
+docker compose logs -f api
+```
+
+### Entrar no container
+```bash
+docker compose exec api sh
+```
+
+---
+
+## Prisma no Docker
+
+Executado automaticamente ao subir:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+Executar manualmente:
+
+```bash
+docker compose exec api npx prisma studio
+```
+
+---
+
+## Opção 2: Sem Docker
+
+### Instalação
 ```bash
 git clone <repo-url>
 cd pet-health-api
 npm install
 ```
 
----
-
-## Configuração
-
+### Configuração
 ```bash
 cp .env.example .env
 ```
 
 Preencha:
 
-DATABASE_URL=  
-JWT_SECRET=  
-JWT_EXPIRES_IN=1d  
-MAIL_HOST=  
-MAIL_PORT=  
-MAIL_USER=  
-MAIL_PASS=  
+```
+DATABASE_URL=
+JWT_SECRET=
+JWT_EXPIRES_IN=1d
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USER=
+MAIL_PASS=
 MAIL_FROM=
+```
 
----
-
-## Executando
-
+### Executar
 ```bash
 npm run start:dev
 ```
 
-Swagger: http://localhost:3000/docs
+Swagger:
+http://localhost:3000/docs
 
 ---
 
@@ -188,14 +288,16 @@ npm run test:e2e
 GET /health
 
 ---
+
 ## Próximos passos
 
-* [x] Autenticação com JWT
-* [x] Módulo de medicamentos com horários
-* [ ] Dashboard de próximos eventos
-* [ ] Deploy em ambiente cloud
-* [ ] Notificações via push
+- [x] Autenticação com JWT
+- [x] Módulo de medicamentos com horários
+- [ ] Dashboard de próximos eventos
+- [ ] Deploy em cloud
+- [ ] Notificações push
 
 ---
+
 ## Autor
 Projeto desenvolvido por [@AysllaGomes](https://github.com/AysllaGomes)
