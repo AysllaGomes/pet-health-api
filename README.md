@@ -28,6 +28,16 @@ Tudo isso com autenticação segura e isolamento de dados por usuário.
 - Jest (unit + e2e)
 
 ---
+## Documentação
+
+A documentação técnica completa do projeto está disponível na pasta `/docs`.
+
+- [Arquitetura](./docs/architecture.md)
+- [Docker](./docs/docker.md)
+- [API](./docs/api.md)
+- [Roadmap](./docs/roadmap.md)
+
+---
 
 ## Diferenciais
 
