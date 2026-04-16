@@ -4,10 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import {
   DashboardEvent,
-  DashboardEventStatus,
   DashboardResponse,
 } from './interfaces/dashboard-response.interface';
-import { NotificationStatus } from '../notifications/interfaces/notification-status.interface';
+
+import { DashboardEventType } from '../common/enums/dashboard-event-type.enum';
+import { NotificationStatus } from 'src/common/enums/notification-status.enum';
+import { DashboardEventStatus } from '../common/enums/dashboard-event-status.enum';
 
 @Injectable()
 export class DashboardService {
@@ -255,7 +257,7 @@ export class DashboardService {
     const scheduledFor = vaccine.nextDoseDate ?? new Date();
 
     return {
-      type: 'VACCINE',
+      type: DashboardEventType.VACCINE,
       petId: vaccine.pet.id,
       petName: vaccine.pet.name,
       title: vaccine.name,
@@ -287,7 +289,7 @@ export class DashboardService {
     );
 
     return {
-      type: 'MEDICATION',
+      type: DashboardEventType.MEDICATION,
       petId: medication.pet.id,
       petName: medication.pet.name,
       title: medication.name,

@@ -1,9 +1,6 @@
-export type DashboardEventType = 'VACCINE' | 'MEDICATION';
+import { DashboardEventStatus } from '../../common/enums/dashboard-event-status.enum';
 
-export enum DashboardEventStatus {
-  TODAY = 'TODAY',
-  UPCOMING = 'UPCOMING',
-}
+export type DashboardEventType = 'VACCINE' | 'MEDICATION';
 
 export interface DashboardEvent {
   type: DashboardEventType;
