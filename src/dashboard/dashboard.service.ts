@@ -9,6 +9,8 @@ import {
 
 @Injectable()
 export class DashboardService {
+  private static readonly UPCOMING_LIMIT = 10;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(userId: string): Promise<DashboardResponse> {
@@ -19,6 +21,9 @@ export class DashboardService {
 
     const endOfToday = new Date(now);
     endOfToday.setHours(23, 59, 59, 999);
+
+    const startOfTomorrow = new Date(endOfToday);
+    startOfTomorrow.setMilliseconds(startOfTomorrow.getMilliseconds() + 1);
 
     const next7Days = new Date(now);
     next7Days.setDate(next7Days.getDate() + 7);
@@ -100,7 +105,7 @@ export class DashboardService {
         where: {
           pet: { userId },
           nextDoseDate: {
-            gt: endOfToday,
+            gte: startOfTomorrow,
             lte: next7Days,
           },
         },
@@ -163,10 +168,22 @@ export class DashboardService {
 
     const upcomingMedicationEvents = activeMedications
       .filter((medication) =>
-        this.isMedicationRelevantForUpcoming(medication, endOfToday, next7Days),
+        this.isMedicationRelevantForUpcoming(
+          medication,
+          startOfTomorrow,
+          next7Days,
+        ),
       )
       .map((medication) =>
-        this.mapMedicationToEvent(medication, medication.startDate, 'UPCOMING'),
+        this.mapMedicationToEvent(
+          medication,
+          this.getUpcomingMedicationBaseDate(medication, startOfTomorrow),
+          'UPCOMING',
+        ),
+      )
+      .filter(
+        (event) =>
+          new Date(event.scheduledFor).getTime() >= startOfTomorrow.getTime(),
       );
 
     const todayVaccineEvents = todayVaccines.map((vaccine) =>
@@ -177,18 +194,15 @@ export class DashboardService {
       this.mapVaccineToEvent(vaccine, 'UPCOMING'),
     );
 
-    const today = [...todayVaccineEvents, ...todayMedicationEvents].sort(
-      (a, b) =>
-        new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
-    );
+    const today = this.sortEvents([
+      ...todayVaccineEvents,
+      ...todayMedicationEvents,
+    ]);
 
-    const upcoming = [...upcomingVaccineEvents, ...upcomingMedicationEvents]
-      .sort(
-        (a, b) =>
-          new Date(a.scheduledFor).getTime() -
-          new Date(b.scheduledFor).getTime(),
-      )
-      .slice(0, 10);
+    const upcoming = this.sortEvents([
+      ...upcomingVaccineEvents,
+      ...upcomingMedicationEvents,
+    ]).slice(0, DashboardService.UPCOMING_LIMIT);
 
     return {
       summary: {
@@ -202,6 +216,24 @@ export class DashboardService {
       upcoming,
       recentNotifications,
     };
+  }
+
+  private sortEvents(events: DashboardEvent[]): DashboardEvent[] {
+    return [...events].sort(
+      (a, b) =>
+        new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
+    );
+  }
+
+  private getUpcomingMedicationBaseDate(
+    medication: {
+      startDate: Date;
+    },
+    startOfTomorrow: Date,
+  ): Date {
+    return medication.startDate > startOfTomorrow
+      ? medication.startDate
+      : startOfTomorrow;
   }
 
   private mapVaccineToEvent(
@@ -319,12 +351,12 @@ export class DashboardService {
       startDate: Date;
       endDate: Date | null;
     },
-    todayEnd: Date,
+    startOfTomorrow: Date,
     rangeEnd: Date,
   ): boolean {
     const start = new Date(medication.startDate);
     const end = medication.endDate ? new Date(medication.endDate) : null;
 
-    return start <= rangeEnd && (!end || end > todayEnd);
+    return start <= rangeEnd && (!end || end >= startOfTomorrow);
   }
 }
