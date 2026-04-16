@@ -11,11 +11,12 @@ import { MailModule } from './mail/mail.module';
 import { PetsModule } from './pets/pets.module';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { HealthModule } from './health/health.module';
 import { VaccinesModule } from './vaccines/vaccines.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MedicationsModule } from './medications/medications.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HealthModule } from './health/health.module';
     PetsModule,
     UsersModule,
     VaccinesModule,
+    DashboardModule,
     RemindersModule,
     MedicationsModule,
     NotificationsModule,
