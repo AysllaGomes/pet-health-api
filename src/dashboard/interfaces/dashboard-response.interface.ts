@@ -1,12 +1,17 @@
 export type DashboardEventType = 'VACCINE' | 'MEDICATION';
 
+export enum DashboardEventStatus {
+  TODAY = 'TODAY',
+  UPCOMING = 'UPCOMING',
+}
+
 export interface DashboardEvent {
   type: DashboardEventType;
   petId: string;
   petName: string;
   title: string;
   scheduledFor: string;
-  status: 'TODAY' | 'UPCOMING';
+  status: DashboardEventStatus;
   daysUntil: number;
   metadata?: {
     category?: string;

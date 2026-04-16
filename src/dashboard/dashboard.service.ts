@@ -4,8 +4,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import {
   DashboardEvent,
+  DashboardEventStatus,
   DashboardResponse,
 } from './interfaces/dashboard-response.interface';
+import { NotificationStatus } from '../notifications/interfaces/notification-status.interface';
 
 @Injectable()
 export class DashboardService {
@@ -69,14 +71,14 @@ export class DashboardService {
       this.prisma.notification.count({
         where: {
           pet: { userId },
-          status: 'SENT',
+          status: NotificationStatus.SENT,
         },
       }),
 
       this.prisma.notification.count({
         where: {
           pet: { userId },
-          status: 'FAILED',
+          status: NotificationStatus.FAILED,
         },
       }),
 
@@ -163,7 +165,11 @@ export class DashboardService {
         this.isMedicationRelevantForDate(medication, startOfToday),
       )
       .map((medication) =>
-        this.mapMedicationToEvent(medication, startOfToday, 'TODAY'),
+        this.mapMedicationToEvent(
+          medication,
+          startOfToday,
+          DashboardEventStatus.TODAY,
+        ),
       );
 
     const upcomingMedicationEvents = activeMedications
@@ -178,7 +184,7 @@ export class DashboardService {
         this.mapMedicationToEvent(
           medication,
           this.getUpcomingMedicationBaseDate(medication, startOfTomorrow),
-          'UPCOMING',
+          DashboardEventStatus.UPCOMING,
         ),
       )
       .filter(
@@ -187,11 +193,11 @@ export class DashboardService {
       );
 
     const todayVaccineEvents = todayVaccines.map((vaccine) =>
-      this.mapVaccineToEvent(vaccine, 'TODAY'),
+      this.mapVaccineToEvent(vaccine, DashboardEventStatus.TODAY),
     );
 
     const upcomingVaccineEvents = upcomingVaccines.map((vaccine) =>
-      this.mapVaccineToEvent(vaccine, 'UPCOMING'),
+      this.mapVaccineToEvent(vaccine, DashboardEventStatus.UPCOMING),
     );
 
     const today = this.sortEvents([
@@ -244,7 +250,7 @@ export class DashboardService {
       nextDoseDate: Date | null;
       pet: { id: string; name: string };
     },
-    status: 'TODAY' | 'UPCOMING',
+    status: DashboardEventStatus,
   ): DashboardEvent {
     const scheduledFor = vaccine.nextDoseDate ?? new Date();
 
@@ -273,7 +279,7 @@ export class DashboardService {
       pet: { id: string; name: string };
     },
     baseDate: Date,
-    status: 'TODAY' | 'UPCOMING',
+    status: DashboardEventStatus,
   ): DashboardEvent {
     const scheduledFor = this.buildMedicationDateTime(
       baseDate,
