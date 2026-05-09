@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, UseGuards, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards,
+  Query,
+  Patch,
+  Param,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -14,6 +23,7 @@ import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import * as authenticatedUserInterface from '../auth/interfaces/authenticated-user.interface';
+import { UpdateVaccineDto } from './dto/update-vaccine.dto';
 
 @ApiBearerAuth('JWT-auth')
 @ApiTags('vaccines')
@@ -50,5 +60,10 @@ export class VaccinesController {
     @Query() query: PaginationQueryDto,
   ) {
     return this.vaccinesService.findAll(user.userId, query);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() data: UpdateVaccineDto) {
+    return this.vaccinesService.update(id, data);
   }
 }

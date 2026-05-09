@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateVaccineDto, VaccineCategoryDto } from './dto/create-vaccine.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { UpdateVaccineDto } from './dto/update-vaccine.dto';
 
 @Injectable()
 export class VaccinesService {
@@ -74,5 +75,12 @@ export class VaccinesService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  update(id: string, data: UpdateVaccineDto) {
+    return this.prisma.vaccine.update({
+      where: { id },
+      data,
+    });
   }
 }
